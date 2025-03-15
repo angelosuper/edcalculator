@@ -14,28 +14,11 @@ app = FastAPI(title="3D Print Cost Calculator API")
 # Initialize database tables at startup
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Starting up FastAPI application")
     database.init_db()
 
 # Materials endpoints
-@app.post("/materials/", response_model=schemas.Material)
-def create_material(material: schemas.MaterialCreate, db: Session = Depends(database.get_db)):
-    logger.info(f"Creating new material: {material.name}")
-    db_material = models.Material(**material.dict())
-    db.add(db_material)
-    try:
-        db.commit()
-        db.refresh(db_material)
-        logger.info(f"Material {material.name} created successfully")
-        return db_material
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating material: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/materials/", response_model=List[schemas.Material])
 def read_materials(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)):
-    logger.info("Fetching materials list")
     try:
         materials = db.query(models.Material).offset(skip).limit(limit).all()
         return materials
@@ -43,35 +26,31 @@ def read_materials(skip: int = 0, limit: int = 100, db: Session = Depends(databa
         logger.error(f"Error fetching materials: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/materials/{material_id}", response_model=schemas.Material)
-def read_material(material_id: int, db: Session = Depends(database.get_db)):
-    logger.info(f"Fetching material with id: {material_id}")
-    material = db.query(models.Material).filter(models.Material.id == material_id).first()
-    if material is None:
-        logger.warning(f"Material with id {material_id} not found")
-        raise HTTPException(status_code=404, detail="Material not found")
-    return material
-
-@app.patch("/materials/{material_id}", response_model=schemas.Material)
-def update_material(
-    material_id: int,
-    material_update: schemas.MaterialUpdate,
-    db: Session = Depends(database.get_db)
-):
-    logger.info(f"Updating material with id: {material_id}")
-    db_material = db.query(models.Material).filter(models.Material.id == material_id).first()
-    if db_material is None:
-        logger.warning(f"Material with id {material_id} not found")
-        raise HTTPException(status_code=404, detail="Material not found")
-
-    update_data = material_update.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(db_material, field, value)
-
+@app.post("/materials/", response_model=schemas.Material)
+def create_material(material: schemas.MaterialCreate, db: Session = Depends(database.get_db)):
     try:
+        db_material = models.Material(**material.dict())
+        db.add(db_material)
         db.commit()
         db.refresh(db_material)
-        logger.info(f"Material {db_material.name} updated successfully")
+        return db_material
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating material: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.patch("/materials/{material_id}", response_model=schemas.Material)
+def update_material(material_id: int, material: schemas.MaterialUpdate, db: Session = Depends(database.get_db)):
+    try:
+        db_material = db.query(models.Material).filter(models.Material.id == material_id).first()
+        if not db_material:
+            raise HTTPException(status_code=404, detail="Material not found")
+
+        for field, value in material.dict(exclude_unset=True).items():
+            setattr(db_material, field, value)
+
+        db.commit()
+        db.refresh(db_material)
         return db_material
     except Exception as e:
         db.rollback()
@@ -80,16 +59,13 @@ def update_material(
 
 @app.delete("/materials/{material_id}")
 def delete_material(material_id: int, db: Session = Depends(database.get_db)):
-    logger.info(f"Deleting material with id: {material_id}")
-    db_material = db.query(models.Material).filter(models.Material.id == material_id).first()
-    if db_material is None:
-        logger.warning(f"Material with id {material_id} not found")
-        raise HTTPException(status_code=404, detail="Material not found")
-
     try:
+        db_material = db.query(models.Material).filter(models.Material.id == material_id).first()
+        if not db_material:
+            raise HTTPException(status_code=404, detail="Material not found")
+
         db.delete(db_material)
         db.commit()
-        logger.info(f"Material {material_id} deleted successfully")
         return {"message": "Material deleted successfully"}
     except Exception as e:
         db.rollback()

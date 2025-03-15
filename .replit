@@ -69,7 +69,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python -m uvicorn backend.api:app --host 0.0.0.0 --port 8000 --log-level debug"
+args = "uvicorn backend.api:app --host 0.0.0.0 --port 8000"
 waitForPort = 8000
 
 [[ports]]
