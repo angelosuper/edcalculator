@@ -19,4 +19,5 @@ dependencies = [
     "openai>=1.66.3",
     "python-multipart>=0.0.20",
     "streamlit-extras>=0.6.0",
+    "trimesh>=4.6.4",
 ]
