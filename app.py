@@ -253,20 +253,32 @@ def main():
             )
 
         st.subheader("Selezione Materiale")
-        materials_df = pd.DataFrame.from_dict(materials_data, orient='index')
-        materials_df.index.name = 'Materiale'
 
-        st.dataframe(materials_df.rename(columns={
-            'density': 'Densità (g/cm³)',
-            'cost_per_kg': 'Costo per kg (€)',
-            'min_layer_height': 'Altezza min. layer (mm)',
-            'max_layer_height': 'Altezza max. layer (mm)'
-        }))
+        # Sposta la tabella dei materiali in un expander
+        with st.expander("📋 Mostra dettagli materiali"):
+            materials_df = pd.DataFrame.from_dict(materials_data, orient='index')
+            materials_df.index.name = 'Materiale'
 
-        selected_material = st.selectbox(
+            st.dataframe(materials_df.rename(columns={
+                'density': 'Densità (g/cm³)',
+                'cost_per_kg': 'Costo per kg (€)',
+                'min_layer_height': 'Altezza min. layer (mm)',
+                'max_layer_height': 'Altezza max. layer (mm)'
+            }))
+
+        # Modifica il selectbox per includere il costo
+        material_options = {
+            f"{name} (€{props['cost_per_kg']}/kg)": name 
+            for name, props in materials_data.items()
+        }
+
+        selected_material_display = st.selectbox(
             "Seleziona materiale",
-            options=list(materials_data.keys())
+            options=list(material_options.keys())
         )
+
+        # Ottieni il nome del materiale effettivo
+        selected_material = material_options[selected_material_display]
 
         if selected_material and current_step == 0:
             tutorial.next_step()
