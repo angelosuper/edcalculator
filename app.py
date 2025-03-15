@@ -1,9 +1,21 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
+import requests
+import pandas as pd
 
-from materials import get_materials_df, get_material_properties, MATERIALS_DATA
 from stl_processor import process_stl, calculate_print_cost
+from materials_manager import materials_manager_page, fetch_materials
+
+def get_materials_from_api():
+    """Recupera i materiali dal backend"""
+    materials = fetch_materials()
+    return {mat['name']: {
+        'density': mat['density'],
+        'cost_per_kg': mat['cost_per_kg'],
+        'min_layer_height': mat['min_layer_height'],
+        'max_layer_height': mat['max_layer_height']
+    } for mat in materials}
 
 def create_3d_visualization(vertices, visualization_mode='points'):
     """Crea una visualizzazione 3D del modello STL con diverse modalità"""
@@ -179,102 +191,118 @@ def create_3d_visualization(vertices, visualization_mode='points'):
     return fig
 
 def main():
-    st.title("Calcolatore Costi Stampa 3D")
+    st.sidebar.title("Navigazione")
+    page = st.sidebar.radio("Vai a", ["Calcolo Costi", "Gestione Materiali"])
 
-    # Selezione materiale
-    st.subheader("Selezione Materiale")
-    materials_df = get_materials_df()
-    st.dataframe(materials_df.rename(columns={
-        'density': 'Densità (g/cm³)',
-        'cost_per_kg': 'Costo per kg (€)',
-        'min_layer_height': 'Altezza min. layer (mm)',
-        'max_layer_height': 'Altezza max. layer (mm)'
-    }))
+    if page == "Calcolo Costi":
+        st.title("Calcolatore Costi Stampa 3D")
 
-    selected_material = st.selectbox(
-        "Seleziona materiale",
-        options=list(MATERIALS_DATA.keys())
-    )
+        # Recupera materiali dal backend
+        materials_data = get_materials_from_api()
 
-    material_props = get_material_properties(selected_material)
-    if material_props:
-        # Selezione altezza layer
-        layer_height = st.slider(
-            "Altezza layer (mm)",
-            min_value=material_props['min_layer_height'],
-            max_value=material_props['max_layer_height'],
-            value=0.2,
-            step=0.05
+        if not materials_data:
+            st.warning("Nessun materiale disponibile. Aggiungi materiali nella sezione 'Gestione Materiali'.")
+            return
+
+        # Selezione materiale
+        st.subheader("Selezione Materiale")
+        materials_df = pd.DataFrame.from_dict(materials_data, orient='index')
+        materials_df.index.name = 'Materiale'
+        st.dataframe(materials_df.rename(columns={
+            'density': 'Densità (g/cm³)',
+            'cost_per_kg': 'Costo per kg (€)',
+            'min_layer_height': 'Altezza min. layer (mm)',
+            'max_layer_height': 'Altezza max. layer (mm)'
+        }))
+
+        selected_material = st.selectbox(
+            "Seleziona materiale",
+            options=list(materials_data.keys())
         )
 
-        # Velocità di stampa
-        velocita_stampa = st.slider(
-            "Velocità di stampa (mm/s)",
-            min_value=30,
-            max_value=100,
-            value=60,
-            step=5
-        )
+        material_props = materials_data.get(selected_material)
 
-        # Caricamento file
-        st.subheader("Carica File STL")
-        uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
+        if material_props:
+            # Selezione altezza layer
+            layer_height = st.slider(
+                "Altezza layer (mm)",
+                min_value=material_props['min_layer_height'],
+                max_value=material_props['max_layer_height'],
+                value=0.2,
+                step=0.05
+            )
 
-        if uploaded_file is not None:
-            try:
-                # Processa file STL
-                file_content = uploaded_file.read()
-                volume, vertices, dimensions = process_stl(file_content)
+            # Velocità di stampa
+            velocita_stampa = st.slider(
+                "Velocità di stampa (mm/s)",
+                min_value=30,
+                max_value=100,
+                value=60,
+                step=5
+            )
 
-                # Calcola costi
-                calculations = calculate_print_cost(volume, material_props, layer_height, velocita_stampa)
+            # Caricamento file
+            st.subheader("Carica File STL")
+            uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
 
-                # Mostra risultati
-                st.subheader("Risultati")
-                col1, col2, col3 = st.columns(3)
+            if uploaded_file is not None:
+                try:
+                    # Processa file STL
+                    file_content = uploaded_file.read()
+                    volume, vertices, dimensions = process_stl(file_content)
 
-                with col1:
-                    st.metric("Volume", f"{calculations['volume_cm3']} cm³")
-                with col2:
-                    st.metric("Peso", f"{calculations['weight_kg']} kg")
-                with col3:
-                    st.metric("Costo Totale", f"€{calculations['total_cost']}")
+                    # Calcola costi
+                    calculations = calculate_print_cost(volume, material_props, layer_height, velocita_stampa)
 
-                # Mostra dimensioni
-                st.subheader("Dimensioni Oggetto")
-                dim_col1, dim_col2, dim_col3 = st.columns(3)
-                with dim_col1:
-                    st.metric("Larghezza", f"{dimensions['width']} mm")
-                with dim_col2:
-                    st.metric("Profondità", f"{dimensions['depth']} mm")
-                with dim_col3:
-                    st.metric("Altezza", f"{dimensions['height']} mm")
+                    # Mostra risultati
+                    st.subheader("Risultati")
+                    col1, col2, col3 = st.columns(3)
 
-                # Dettaglio costi
-                st.subheader("Dettaglio Costi")
-                st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa']} ore")
-                st.write(f"Costo Materiale: €{calculations['material_cost']}")
-                st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
+                    with col1:
+                        st.metric("Volume", f"{calculations['volume_cm3']} cm³")
+                    with col2:
+                        st.metric("Peso", f"{calculations['weight_kg']} kg")
+                    with col3:
+                        st.metric("Costo Totale", f"€{calculations['total_cost']}")
 
-                # Selezione modalità visualizzazione
-                st.subheader("Anteprima Modello")
-                visualization_mode = st.selectbox(
-                    "Modalità di visualizzazione",
-                    options=['points', 'surface', 'wireframe', 'combination'],
-                    format_func=lambda x: {
-                        'points': 'Punti',
-                        'surface': 'Superficie',
-                        'wireframe': 'Reticolo',
-                        'combination': 'Combinato'
-                    }[x]
-                )
+                    # Mostra dimensioni
+                    st.subheader("Dimensioni Oggetto")
+                    dim_col1, dim_col2, dim_col3 = st.columns(3)
+                    with dim_col1:
+                        st.metric("Larghezza", f"{dimensions['width']} mm")
+                    with dim_col2:
+                        st.metric("Profondità", f"{dimensions['depth']} mm")
+                    with dim_col3:
+                        st.metric("Altezza", f"{dimensions['height']} mm")
 
-                # Visualizzazione 3D
-                fig = create_3d_visualization(vertices, visualization_mode)
-                st.plotly_chart(fig, use_container_width=True)
+                    # Dettaglio costi
+                    st.subheader("Dettaglio Costi")
+                    st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa']} ore")
+                    st.write(f"Costo Materiale: €{calculations['material_cost']}")
+                    st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-            except Exception as e:
-                st.error(f"Errore nel processare il file: {str(e)}")
+                    # Selezione modalità visualizzazione
+                    st.subheader("Anteprima Modello")
+                    visualization_mode = st.selectbox(
+                        "Modalità di visualizzazione",
+                        options=['points', 'surface', 'wireframe', 'combination'],
+                        format_func=lambda x: {
+                            'points': 'Punti',
+                            'surface': 'Superficie',
+                            'wireframe': 'Reticolo',
+                            'combination': 'Combinato'
+                        }[x]
+                    )
+
+                    # Visualizzazione 3D
+                    fig = create_3d_visualization(vertices, visualization_mode)
+                    st.plotly_chart(fig, use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Errore nel processare il file: {str(e)}")
+
+    elif page == "Gestione Materiali":
+        materials_manager_page()
 
 if __name__ == "__main__":
     main()

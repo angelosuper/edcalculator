@@ -1,43 +1,72 @@
+import logging
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
 from . import models, schemas, database
 
+# Configura logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="3D Print Cost Calculator API")
 
-# Ensure tables are created
-models.Base.metadata.create_all(bind=database.engine)
+# Initialize database tables at startup
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting up FastAPI application")
+    database.init_db()
 
 # Materials endpoints
 @app.post("/materials/", response_model=schemas.Material)
 def create_material(material: schemas.MaterialCreate, db: Session = Depends(database.get_db)):
+    logger.info(f"Creating new material: {material.name}")
     db_material = models.Material(**material.dict())
     db.add(db_material)
-    db.commit()
-    db.refresh(db_material)
-    return db_material
+    try:
+        db.commit()
+        db.refresh(db_material)
+        logger.info(f"Material {material.name} created successfully")
+        return db_material
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating material: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/materials/", response_model=List[schemas.Material])
 def read_materials(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)):
-    materials = db.query(models.Material).offset(skip).limit(limit).all()
-    return materials
+    logger.info("Fetching materials list")
+    try:
+        materials = db.query(models.Material).offset(skip).limit(limit).all()
+        return materials
+    except Exception as e:
+        logger.error(f"Error fetching materials: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/materials/{material_id}", response_model=schemas.Material)
 def read_material(material_id: int, db: Session = Depends(database.get_db)):
+    logger.info(f"Fetching material with id: {material_id}")
     material = db.query(models.Material).filter(models.Material.id == material_id).first()
     if material is None:
-        raise HTTPException(status_code=404, detail="Materiale non trovato")
+        logger.warning(f"Material with id {material_id} not found")
+        raise HTTPException(status_code=404, detail="Material not found")
     return material
 
 # Printers endpoints
 @app.post("/printers/", response_model=schemas.Printer)
 def create_printer(printer: schemas.PrinterCreate, db: Session = Depends(database.get_db)):
+    logger.info(f"Creating new printer: {printer.name}")
     db_printer = models.Printer(**printer.dict())
     db.add(db_printer)
-    db.commit()
-    db.refresh(db_printer)
-    return db_printer
+    try:
+        db.commit()
+        db.refresh(db_printer)
+        logger.info(f"Printer {printer.name} created successfully")
+        return db_printer
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating printer: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/printers/", response_model=List[schemas.Printer])
 def read_printers(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)):
@@ -47,11 +76,18 @@ def read_printers(skip: int = 0, limit: int = 100, db: Session = Depends(databas
 # Energy costs endpoints
 @app.post("/energy-costs/", response_model=schemas.EnergyCost)
 def create_energy_cost(energy_cost: schemas.EnergyCostCreate, db: Session = Depends(database.get_db)):
+    logger.info("Creating new energy cost entry")
     db_energy_cost = models.EnergyCost(**energy_cost.dict())
     db.add(db_energy_cost)
-    db.commit()
-    db.refresh(db_energy_cost)
-    return db_energy_cost
+    try:
+        db.commit()
+        db.refresh(db_energy_cost)
+        logger.info("Energy cost entry created successfully")
+        return db_energy_cost
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error creating energy cost: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/energy-costs/", response_model=List[schemas.EnergyCost])
 def read_energy_costs(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)):
