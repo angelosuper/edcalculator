@@ -88,6 +88,19 @@ def main():
         layout="wide"
     )
 
+    # Stile CSS per ridurre la larghezza della sidebar
+    st.markdown("""
+        <style>
+        [data-testid="stSidebar"][aria-expanded="true"] {
+            width: 200px;
+        }
+        [data-testid="stSidebar"][aria-expanded="false"] {
+            width: 200px;
+            margin-left: -200px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     # Barra laterale
     with st.sidebar:
         st.title("Navigazione")
@@ -139,8 +152,8 @@ def main():
         material_props = materials_data.get(selected_material)
 
         if material_props:
-            # Layout a due colonne per i controlli
-            col1, col2, col3 = st.columns(3)
+            # Layout per layer height e numero copie
+            col1, col2 = st.columns(2)
 
             with col1:
                 layer_height = st.slider(
@@ -152,15 +165,6 @@ def main():
                 )
 
             with col2:
-                velocita_stampa = st.slider(
-                    "Velocità di stampa (mm/s)",
-                    min_value=30,
-                    max_value=100,
-                    value=60,
-                    step=5
-                )
-
-            with col3:
                 num_copies = st.number_input(
                     "Numero di copie",
                     min_value=1,
@@ -177,26 +181,21 @@ def main():
                 try:
                     logger.info("File STL caricato, inizio elaborazione")
                     # Processa file STL
-                    file_content = uploaded_file.getvalue()
-                    volume, vertices, dimensions = process_stl(file_content)
+                    volume, vertices, dimensions = process_stl(uploaded_file.getvalue())
 
-                    # Calcola costi
-                    calculations = calculate_print_cost(volume, material_props, layer_height, velocita_stampa)
+                    # Calcola costi per un singolo pezzo
+                    calculations = calculate_print_cost(volume, material_props, layer_height)
 
-                    # Aggiorna i costi per il numero di copie
-                    for key in ['volume_cm3', 'weight_kg', 'material_cost', 'machine_cost', 'total_cost']:
-                        calculations[key] *= num_copies
-
-                    # Mostra risultati
-                    st.subheader("Risultati")
+                    # Mostra risultati per pezzo singolo
+                    st.subheader("Risultati per Singolo Pezzo")
                     col1, col2, col3 = st.columns(3)
 
                     with col1:
-                        st.metric("Volume Totale", f"{calculations['volume_cm3']:.2f} cm³")
+                        st.metric("Volume", f"{calculations['volume_cm3']:.2f} cm³")
                     with col2:
-                        st.metric("Peso Totale", f"{calculations['weight_kg']:.3f} kg")
+                        st.metric("Peso", f"{calculations['weight_kg']:.3f} kg")
                     with col3:
-                        st.metric("Costo Totale", f"€{calculations['total_cost']:.2f}")
+                        st.metric("Costo", f"€{calculations['total_cost']:.2f}")
 
                     # Mostra dimensioni
                     st.subheader("Dimensioni Oggetto")
@@ -208,9 +207,25 @@ def main():
                     with dim_col3:
                         st.metric("Altezza", f"{dimensions['height']:.1f} mm")
 
-                    # Dettaglio costi
-                    st.subheader("Dettaglio Costi")
-                    st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa'] * num_copies:.1f} ore")
+                    # Mostra totale per tutte le copie se num_copies > 1
+                    if num_copies > 1:
+                        st.subheader(f"Totale per {num_copies} pezzi")
+                        total_cost = calculations['total_cost'] * num_copies
+                        total_volume = calculations['volume_cm3'] * num_copies
+                        total_weight = calculations['weight_kg'] * num_copies
+                        total_time = calculations['tempo_stampa'] * num_copies
+
+                        tcol1, tcol2, tcol3 = st.columns(3)
+                        with tcol1:
+                            st.metric("Volume Totale", f"{total_volume:.2f} cm³")
+                        with tcol2:
+                            st.metric("Peso Totale", f"{total_weight:.3f} kg")
+                        with tcol3:
+                            st.metric("Costo Totale", f"€{total_cost:.2f}")
+
+                    # Dettaglio costi per pezzo
+                    st.subheader("Dettaglio Costi per Pezzo")
+                    st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa']:.1f} ore")
                     st.write(f"Costo Materiale: €{calculations['material_cost']:.2f}")
                     st.write(f"Costo Macchina: €{calculations['machine_cost']:.2f} (€30/ora)")
 

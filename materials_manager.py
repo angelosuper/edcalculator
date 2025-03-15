@@ -13,7 +13,6 @@ def fetch_materials():
         try:
             response = requests.get(f"{BACKEND_URL}/materials/")
             if response.status_code == 200:
-                # Simula un breve ritardo per mostrare l'animazione
                 time.sleep(0.5)
                 return response.json()
             else:
@@ -25,7 +24,7 @@ def fetch_materials():
 
 def validate_material_data(data):
     """Valida i dati del materiale"""
-    required_fields = ['name', 'density', 'cost_per_kg', 'min_layer_height', 'max_layer_height']
+    required_fields = ['name', 'density', 'cost_per_kg', 'min_layer_height', 'max_layer_height', 'print_speed']
 
     for field in required_fields:
         if not data.get(field):
@@ -126,6 +125,7 @@ def materials_manager_page():
         with col2:
             default_temperature = st.number_input("Temperatura predefinita (°C)", min_value=150.0, value=200.0, step=5.0)
             default_bed_temperature = st.number_input("Temperatura piano (°C)", min_value=0.0, value=60.0, step=5.0)
+            print_speed = st.number_input("Velocità di stampa (mm/s)", min_value=10.0, value=60.0, step=5.0)
             retraction_enabled = st.checkbox("Retrazione attiva", value=True)
             retraction_distance = st.number_input("Distanza retrazione (mm)", min_value=0.0, value=6.0, step=0.5)
             retraction_speed = st.number_input("Velocità retrazione (mm/s)", min_value=10.0, value=25.0, step=5.0)
@@ -139,11 +139,11 @@ def materials_manager_page():
                 "max_layer_height": max_layer_height,
                 "default_temperature": default_temperature,
                 "default_bed_temperature": default_bed_temperature,
+                "print_speed": print_speed,
                 "retraction_enabled": retraction_enabled,
                 "retraction_distance": retraction_distance,
                 "retraction_speed": retraction_speed,
-                "print_speed": 60.0,
-                "first_layer_speed": 30.0,
+                "first_layer_speed": print_speed / 2,
                 "fan_speed": 100,
                 "flow_rate": 100
             }
@@ -169,6 +169,7 @@ def materials_manager_page():
                 - Densità: {material['density']} g/cm³
                 - Costo: €{material['cost_per_kg']}/kg
                 - Layer: {material['min_layer_height']}-{material['max_layer_height']} mm
+                - Velocità: {material['print_speed']} mm/s
                 """)
 
             with col2:
@@ -195,6 +196,7 @@ def materials_manager_page():
                     with col2:
                         new_min_layer = st.number_input("Min Layer", value=material['min_layer_height'], key=f"edit_min_{material['id']}")
                         new_max_layer = st.number_input("Max Layer", value=material['max_layer_height'], key=f"edit_max_{material['id']}")
+                        new_print_speed = st.number_input("Velocità di stampa", value=material['print_speed'], key=f"edit_speed_{material['id']}")
 
                     col3, col4 = st.columns(2)
                     with col3:
@@ -204,7 +206,8 @@ def materials_manager_page():
                                 "density": new_density,
                                 "cost_per_kg": new_cost,
                                 "min_layer_height": new_min_layer,
-                                "max_layer_height": new_max_layer
+                                "max_layer_height": new_max_layer,
+                                "print_speed": new_print_speed
                             }
                             if update_material(material['id'], updated_data):
                                 st.session_state.editing_material_id = None
