@@ -27,17 +27,50 @@ def add_material(material_data):
     """Aggiunge un nuovo materiale"""
     with st.spinner('⏳ Aggiunta del nuovo materiale in corso...'):
         try:
-            response = requests.post(f"{BACKEND_URL}/materials/", json=material_data)
+            # Verifica che tutti i campi obbligatori siano presenti e non vuoti
+            required_fields = [
+                'name', 'density', 'cost_per_kg', 
+                'min_layer_height', 'max_layer_height'
+            ]
+            for field in required_fields:
+                if field not in material_data or material_data[field] is None:
+                    st.error(f"❌ Campo obbligatorio mancante: {field}")
+                    return False
+
+            # Verifica che i valori numerici siano positivi
+            numeric_fields = [
+                'density', 'cost_per_kg', 'min_layer_height', 
+                'max_layer_height', 'default_temperature', 
+                'default_bed_temperature', 'retraction_distance', 
+                'retraction_speed', 'print_speed', 'first_layer_speed'
+            ]
+            for field in numeric_fields:
+                if field in material_data and material_data[field] <= 0:
+                    st.error(f"❌ Il campo {field} deve essere maggiore di zero")
+                    return False
+
+            # Log dei dati prima dell'invio
+            st.write("Dati da inviare:", material_data)
+
+            response = requests.post(
+                f"{BACKEND_URL}/materials/", 
+                json=material_data,
+                headers={"Content-Type": "application/json"}
+            )
+
             if response.status_code == 200:
-                # Mostra una animazione di successo
                 with st.balloons():
                     st.success("✅ Materiale aggiunto con successo!")
                 return True
             else:
-                st.error(f"❌ Errore nell'aggiunta del materiale: {response.status_code}")
+                error_detail = response.json().get('detail', 'Errore sconosciuto')
+                st.error(f"❌ Errore nell'aggiunta del materiale: {response.status_code}\nDettaglio: {error_detail}")
                 return False
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             st.error(f"❌ Errore di connessione al backend: {str(e)}")
+            return False
+        except Exception as e:
+            st.error(f"❌ Errore inaspettato: {str(e)}")
             return False
 
 def update_material(material_id, material_data):
