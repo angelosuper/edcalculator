@@ -147,35 +147,116 @@ def main():
                         file_content = uploaded_file.getvalue()
                         file_base64 = base64.b64encode(file_content).decode()
 
-                        # Crea il visualizzatore
+                        # Visualizzatore STL ottimizzato
                         st.components.v1.html(
                             f"""
-                            <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd"></div>
-                            <script src="https://files.replit.com/libs/stl-viewer/stl_viewer.min.js"></script>
+                            <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
+                            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
                             <script>
-                                var stl_viewer = new StlViewer(
-                                    document.getElementById("stl_viewer"),
-                                    {{
-                                        models: [
-                                            {{
-                                                id: 0,
-                                                content: "data:model/stl;base64,{file_base64}",
-                                                color: "#1E88E5",
-                                                rotationX: 0,
-                                                rotationY: 0,
-                                                rotationZ: 0,
-                                                scale: 1
-                                            }}
-                                        ],
-                                        auto_rotate: false,
-                                        allow_drag_and_drop: true,
-                                        camera_controls: true
+                                // Contenitore e dimensioni
+                                const container = document.getElementById('stl_viewer');
+                                const width = container.clientWidth;
+                                const height = container.clientHeight;
+
+                                // Scene setup
+                                const scene = new THREE.Scene();
+                                scene.background = new THREE.Color(0xf5f5f5);
+
+                                // Camera setup
+                                const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+                                camera.position.set(100, 100, 100);
+
+                                // Renderer setup
+                                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                                renderer.setSize(width, height);
+                                container.appendChild(renderer.domElement);
+
+                                // Illuminazione
+                                const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+                                scene.add(ambientLight);
+
+                                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+                                directionalLight.position.set(1, 1, 1);
+                                scene.add(directionalLight);
+
+                                // Controlli della camera
+                                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                                controls.enableDamping = true;
+                                controls.dampingFactor = 0.05;
+                                controls.screenSpacePanning = false;
+                                controls.minDistance = 50;
+                                controls.maxDistance = 300;
+
+                                // Carica il modello STL
+                                const loader = new THREE.STLLoader();
+                                const modelData = atob('{file_base64}');
+                                const buffer = new Uint8Array(modelData.length);
+                                for (let i = 0; i < modelData.length; i++) {{
+                                    buffer[i] = modelData.charCodeAt(i);
+                                }}
+
+                                try {{
+                                    const geometry = loader.parse(buffer.buffer);
+                                    const material = new THREE.MeshPhongMaterial({{
+                                        color: 0x1E88E5,
+                                        specular: 0x111111,
+                                        shininess: 200
+                                    }});
+                                    const mesh = new THREE.Mesh(geometry, material);
+
+                                    // Centra il modello
+                                    geometry.computeBoundingBox();
+                                    const center = new THREE.Vector3();
+                                    geometry.boundingBox.getCenter(center);
+                                    mesh.position.sub(center);
+
+                                    // Calcola la dimensione per il posizionamento della camera
+                                    const box = new THREE.Box3().setFromObject(mesh);
+                                    const size = box.getSize(new THREE.Vector3());
+                                    const maxDim = Math.max(size.x, size.y, size.z);
+
+                                    // Scala il modello se necessario
+                                    if (maxDim > 200) {{
+                                        const scale = 200 / maxDim;
+                                        mesh.scale.multiplyScalar(scale);
                                     }}
-                                );
+
+                                    scene.add(mesh);
+
+                                    // Posiziona la camera
+                                    camera.position.set(maxDim * 2, maxDim * 2, maxDim * 2);
+                                    camera.lookAt(0, 0, 0);
+                                    controls.target.set(0, 0, 0);
+
+                                    // Animazione
+                                    function animate() {{
+                                        requestAnimationFrame(animate);
+                                        controls.update();
+                                        renderer.render(scene, camera);
+                                    }}
+                                    animate();
+
+                                    // Gestione del ridimensionamento
+                                    window.addEventListener('resize', () => {{
+                                        const newWidth = container.clientWidth;
+                                        const newHeight = container.clientHeight;
+                                        camera.aspect = newWidth / newHeight;
+                                        camera.updateProjectionMatrix();
+                                        renderer.setSize(newWidth, newHeight);
+                                    }});
+
+                                    console.log('Modello STL caricato con successo');
+                                }} catch (error) {{
+                                    console.error('Errore nel caricamento del modello:', error);
+                                    container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello 3D: ' + error.message + '</div>';
+                                }}
                             </script>
                             """,
                             height=400
                         )
+
                     except Exception as e:
                         st.error(f"Errore nella visualizzazione del modello 3D: {str(e)}")
 
