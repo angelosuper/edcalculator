@@ -2,6 +2,8 @@ import numpy as np
 from numpy.typing import NDArray
 from stl import mesh
 import io
+import tempfile
+import os
 
 def process_stl(file_content: bytes) -> tuple[float, NDArray]:
     """
@@ -14,16 +16,29 @@ def process_stl(file_content: bytes) -> tuple[float, NDArray]:
         tuple: (volume in cm³, vertices array for plotting)
     """
     try:
-        # Load STL file
-        stl_mesh = mesh.Mesh.from_file(io.BytesIO(file_content))
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.stl') as tmp_file:
+            # Write the binary content to the temporary file
+            tmp_file.write(file_content)
+            tmp_file.flush()
+            tmp_file_path = tmp_file.name
 
-        # Calculate volume (converts from mm³ to cm³)
-        volume = abs(stl_mesh.get_mass_properties()[0]) / 1000
+        try:
+            # Load STL file from the temporary path
+            stl_mesh = mesh.Mesh.from_file(tmp_file_path)
 
-        # Get vertices for visualization
-        vertices = stl_mesh.vectors.reshape(-1, 3)
+            # Calculate volume (converts from mm³ to cm³)
+            volume = abs(stl_mesh.get_mass_properties()[0]) / 1000
 
-        return volume, vertices
+            # Get vertices for visualization
+            vertices = stl_mesh.vectors.reshape(-1, 3)
+
+            return volume, vertices
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(tmp_file_path):
+                os.unlink(tmp_file_path)
+
     except Exception as e:
         raise ValueError(f"Error processing STL file: {str(e)}")
 
