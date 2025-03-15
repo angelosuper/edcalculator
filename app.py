@@ -139,7 +139,7 @@ def main():
                     st.write(f"Costo Materiale: €{calculations['material_cost']}")
                     st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-                    # Visualizzazione 3D con Three.js
+                    # Visualizzazione 3D
                     st.subheader("Anteprima Modello")
 
                     try:
@@ -147,81 +147,20 @@ def main():
                         file_content = uploaded_file.getvalue()
                         file_base64 = base64.b64encode(file_content).decode()
 
-                        # Crea il visualizzatore Three.js
+                        # Crea il visualizzatore
                         st.components.v1.html(
                             f"""
-                            <div id="stl_viewer" style="width:100%; height:400px;"></div>
-                            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r132/three.min.js"></script>
-                            <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
-                            <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/STLLoader.js"></script>
-                            <script>
-                                const container = document.getElementById('stl_viewer');
-                                const scene = new THREE.Scene();
-                                scene.background = new THREE.Color(0xffffff);
-
-                                // Imposta la camera
-                                const camera = new THREE.PerspectiveCamera(75, container.clientWidth/container.clientHeight, 0.1, 1000);
-                                const renderer = new THREE.WebGLRenderer({antialias: true});
-                                renderer.setSize(container.clientWidth, container.clientHeight);
-                                container.appendChild(renderer.domElement);
-
-                                // Illuminazione
-                                const ambientLight = new THREE.AmbientLight(0x404040);
-                                scene.add(ambientLight);
-                                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-                                directionalLight.position.set(1, 1, 1);
-                                scene.add(directionalLight);
-
-                                // Controlli della camera
-                                const controls = new THREE.OrbitControls(camera, renderer.domElement);
-                                controls.enableDamping = true;
-                                controls.dampingFactor = 0.05;
-                                camera.position.z = 5;
-
-                                // Carica il modello STL
-                                const binary = atob("{file_base64}");
-                                const buffer = new ArrayBuffer(binary.length);
-                                const view = new Uint8Array(buffer);
-                                for (let i = 0; i < binary.length; i++) {{
-                                    view[i] = binary.charCodeAt(i);
-                                }}
-
-                                const loader = new THREE.STLLoader();
-                                const geometry = loader.parse(buffer);
-                                const material = new THREE.MeshPhongMaterial({{
-                                    color: 0x1E88E5,
-                                    specular: 0x111111,
-                                    shininess: 200
-                                }});
-                                const mesh = new THREE.Mesh(geometry, material);
-
-                                // Centra il modello
-                                geometry.computeBoundingBox();
-                                const center = geometry.boundingBox.getCenter(new THREE.Vector3());
-                                geometry.translate(-center.x, -center.y, -center.z);
-                                scene.add(mesh);
-
-                                // Adatta la camera al modello
-                                const box = new THREE.Box3().setFromObject(mesh);
-                                const size = box.getSize(new THREE.Vector3());
-                                const maxDim = Math.max(size.x, size.y, size.z);
-                                camera.position.z = maxDim * 2;
-                                controls.update();
-
-                                function animate() {{
-                                    requestAnimationFrame(animate);
-                                    controls.update();
-                                    renderer.render(scene, camera);
-                                }}
-                                animate();
-
-                                // Gestione del ridimensionamento
-                                window.addEventListener('resize', function() {{
-                                    camera.aspect = container.clientWidth / container.clientHeight;
-                                    camera.updateProjectionMatrix();
-                                    renderer.setSize(container.clientWidth, container.clientHeight);
-                                }}, false);
-                            </script>
+                            <div style="width:100%; height:400px; border:1px solid #ddd">
+                                <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+                                <model-viewer
+                                    style="width:100%; height:100%"
+                                    camera-controls
+                                    auto-rotate
+                                    shadow-intensity="1"
+                                    src="data:model/stl;base64,{file_base64}"
+                                    alt="3D model viewer"
+                                ></model-viewer>
+                            </div>
                             """,
                             height=400
                         )
