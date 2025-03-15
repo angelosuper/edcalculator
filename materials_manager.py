@@ -23,191 +23,196 @@ def fetch_materials():
             st.error(f"Errore di connessione al backend: {str(e)}")
             return []
 
+def validate_material_data(data):
+    """Valida i dati del materiale"""
+    required_fields = ['name', 'density', 'cost_per_kg', 'min_layer_height', 'max_layer_height']
+
+    for field in required_fields:
+        if not data.get(field):
+            st.error(f"Campo obbligatorio mancante: {field}")
+            return False
+
+    numeric_fields = [
+        'density', 'cost_per_kg', 'min_layer_height', 'max_layer_height',
+        'default_temperature', 'default_bed_temperature', 'retraction_distance',
+        'retraction_speed', 'print_speed', 'first_layer_speed'
+    ]
+
+    for field in numeric_fields:
+        if field in data and data[field] <= 0:
+            st.error(f"Il valore di {field} deve essere maggiore di zero")
+            return False
+
+    return True
+
 def add_material(material_data):
     """Aggiunge un nuovo materiale"""
-    with st.spinner('⏳ Aggiunta del nuovo materiale in corso...'):
-        try:
-            # Verifica che tutti i campi obbligatori siano presenti e non vuoti
-            required_fields = [
-                'name', 'density', 'cost_per_kg', 
-                'min_layer_height', 'max_layer_height'
-            ]
-            for field in required_fields:
-                if field not in material_data or material_data[field] is None:
-                    st.error(f"❌ Campo obbligatorio mancante: {field}")
-                    return False
+    if not validate_material_data(material_data):
+        return False
 
-            # Verifica che i valori numerici siano positivi
-            numeric_fields = [
-                'density', 'cost_per_kg', 'min_layer_height', 
-                'max_layer_height', 'default_temperature', 
-                'default_bed_temperature', 'retraction_distance', 
-                'retraction_speed', 'print_speed', 'first_layer_speed'
-            ]
-            for field in numeric_fields:
-                if field in material_data and material_data[field] <= 0:
-                    st.error(f"❌ Il campo {field} deve essere maggiore di zero")
-                    return False
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/materials/",
+            json=material_data,
+            headers={"Content-Type": "application/json"}
+        )
 
-            # Log dei dati prima dell'invio
-            st.write("Dati da inviare:", material_data)
-
-            response = requests.post(
-                f"{BACKEND_URL}/materials/", 
-                json=material_data,
-                headers={"Content-Type": "application/json"}
-            )
-
-            if response.status_code == 200:
-                with st.balloons():
-                    st.success("✅ Materiale aggiunto con successo!")
-                return True
-            else:
-                error_detail = response.json().get('detail', 'Errore sconosciuto')
-                st.error(f"❌ Errore nell'aggiunta del materiale: {response.status_code}\nDettaglio: {error_detail}")
-                return False
-        except requests.exceptions.RequestException as e:
-            st.error(f"❌ Errore di connessione al backend: {str(e)}")
+        if response.status_code == 200:
+            st.success("✅ Materiale aggiunto con successo!")
+            return True
+        else:
+            error_detail = response.json().get('detail', 'Errore sconosciuto')
+            st.error(f"Errore nell'aggiunta del materiale: {error_detail}")
             return False
-        except Exception as e:
-            st.error(f"❌ Errore inaspettato: {str(e)}")
-            return False
+    except Exception as e:
+        st.error(f"Errore durante l'aggiunta del materiale: {str(e)}")
+        return False
 
 def update_material(material_id, material_data):
     """Aggiorna un materiale esistente"""
-    with st.spinner('🔄 Aggiornamento del materiale in corso...'):
-        try:
-            response = requests.patch(f"{BACKEND_URL}/materials/{material_id}", json=material_data)
-            if response.status_code == 200:
-                st.success("✅ Materiale aggiornato con successo!")
-                return True
-            else:
-                st.error(f"❌ Errore nell'aggiornamento del materiale: {response.status_code}")
-                return False
-        except Exception as e:
-            st.error(f"❌ Errore di connessione al backend: {str(e)}")
+    if not validate_material_data(material_data):
+        return False
+
+    try:
+        response = requests.patch(
+            f"{BACKEND_URL}/materials/{material_id}",
+            json=material_data,
+            headers={"Content-Type": "application/json"}
+        )
+
+        if response.status_code == 200:
+            st.success("✅ Materiale aggiornato con successo!")
+            return True
+        else:
+            error_detail = response.json().get('detail', 'Errore sconosciuto')
+            st.error(f"Errore nell'aggiornamento del materiale: {error_detail}")
             return False
+    except Exception as e:
+        st.error(f"Errore durante l'aggiornamento del materiale: {str(e)}")
+        return False
 
 def delete_material(material_id):
     """Elimina un materiale"""
-    with st.spinner('🗑️ Eliminazione del materiale in corso...'):
-        try:
-            response = requests.delete(f"{BACKEND_URL}/materials/{material_id}")
-            if response.status_code == 200:
-                st.success("✅ Materiale eliminato con successo!")
-                return True
-            else:
-                st.error(f"❌ Errore nell'eliminazione del materiale: {response.status_code}")
-                return False
-        except Exception as e:
-            st.error(f"❌ Errore di connessione al backend: {str(e)}")
+    try:
+        response = requests.delete(f"{BACKEND_URL}/materials/{material_id}")
+        if response.status_code == 200:
+            st.success("✅ Materiale eliminato con successo!")
+            return True
+        else:
+            error_detail = response.json().get('detail', 'Errore sconosciuto')
+            st.error(f"Errore nell'eliminazione del materiale: {error_detail}")
             return False
-
-def material_form(default_values=None):
-    """Form per l'aggiunta/modifica di un materiale"""
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("##### Parametri Base")
-        name = st.text_input("Nome del materiale", value=default_values.get('name', '') if default_values else '')
-        density = st.number_input("Densità (g/cm³)", min_value=0.1, value=float(default_values.get('density', 1.24)) if default_values else 1.24, step=0.01)
-        cost_per_kg = st.number_input("Costo per kg (€)", min_value=0.1, value=float(default_values.get('cost_per_kg', 20.0)) if default_values else 20.0, step=0.1)
-        min_layer_height = st.number_input("Altezza minima layer (mm)", min_value=0.05, value=float(default_values.get('min_layer_height', 0.1)) if default_values else 0.1, step=0.05)
-        max_layer_height = st.number_input("Altezza massima layer (mm)", min_value=0.1, value=float(default_values.get('max_layer_height', 0.3)) if default_values else 0.3, step=0.05)
-
-    with col2:
-        st.markdown("##### Temperature")
-        default_temperature = st.number_input("Temperatura predefinita (°C)", min_value=150.0, max_value=300.0, value=float(default_values.get('default_temperature', 200.0)) if default_values else 200.0, step=5.0)
-        default_bed_temperature = st.number_input("Temperatura piano (°C)", min_value=0.0, max_value=120.0, value=float(default_values.get('default_bed_temperature', 60.0)) if default_values else 60.0, step=5.0)
-
-    st.markdown("##### Parametri di Stampa")
-    col3, col4 = st.columns(2)
-
-    with col3:
-        retraction_enabled = st.checkbox("Retrazione attiva", value=bool(default_values.get('retraction_enabled', True)) if default_values else True)
-        retraction_distance = st.number_input("Distanza retrazione (mm)", min_value=0.0, max_value=10.0, value=float(default_values.get('retraction_distance', 6.0)) if default_values else 6.0, step=0.5)
-        retraction_speed = st.number_input("Velocità retrazione (mm/s)", min_value=10.0, max_value=100.0, value=float(default_values.get('retraction_speed', 25.0)) if default_values else 25.0, step=5.0)
-
-    with col4:
-        print_speed = st.number_input("Velocità stampa (mm/s)", min_value=10.0, max_value=200.0, value=float(default_values.get('print_speed', 60.0)) if default_values else 60.0, step=5.0)
-        first_layer_speed = st.number_input("Velocità primo layer (mm/s)", min_value=5.0, max_value=100.0, value=float(default_values.get('first_layer_speed', 30.0)) if default_values else 30.0, step=5.0)
-        fan_speed = st.number_input("Velocità ventola (%)", min_value=0, max_value=100, value=int(default_values.get('fan_speed', 100)) if default_values else 100, step=5)
-        flow_rate = st.number_input("Flusso (%)", min_value=50, max_value=200, value=int(default_values.get('flow_rate', 100)) if default_values else 100, step=5)
-
-    return {
-        "name": name,
-        "density": density,
-        "cost_per_kg": cost_per_kg,
-        "min_layer_height": min_layer_height,
-        "max_layer_height": max_layer_height,
-        "default_temperature": default_temperature,
-        "default_bed_temperature": default_bed_temperature,
-        "retraction_enabled": retraction_enabled,
-        "retraction_distance": retraction_distance,
-        "retraction_speed": retraction_speed,
-        "print_speed": print_speed,
-        "first_layer_speed": first_layer_speed,
-        "fan_speed": fan_speed,
-        "flow_rate": flow_rate
-    }
+    except Exception as e:
+        st.error(f"Errore durante l'eliminazione del materiale: {str(e)}")
+        return False
 
 def materials_manager_page():
     st.title("⚙️ Gestione Materiali")
     st.markdown("""
     Qui puoi visualizzare, aggiungere, modificare ed eliminare i materiali disponibili per la stampa 3D.
-    Usa le schede sottostanti per gestire i tuoi materiali.
     """)
 
-    # Stato per tenere traccia del materiale in modifica
-    if 'editing_material' not in st.session_state:
-        st.session_state.editing_material = None
+    # Sezione per aggiungere un nuovo materiale
+    with st.expander("➕ Aggiungi Nuovo Materiale", expanded=False):
+        col1, col2 = st.columns(2)
 
-    # Tab per visualizzare/aggiungere materiali
-    tab1, tab2 = st.tabs(["📋 Lista Materiali", "➕ Aggiungi Materiale"])
+        with col1:
+            name = st.text_input("Nome del materiale")
+            density = st.number_input("Densità (g/cm³)", min_value=0.1, value=1.24, step=0.01)
+            cost_per_kg = st.number_input("Costo per kg (€)", min_value=0.1, value=20.0, step=0.1)
+            min_layer_height = st.number_input("Altezza minima layer (mm)", min_value=0.05, value=0.1, step=0.05)
+            max_layer_height = st.number_input("Altezza massima layer (mm)", min_value=0.1, value=0.3, step=0.05)
 
-    with tab1:
-        st.subheader("📋 Lista dei Materiali")
+        with col2:
+            default_temperature = st.number_input("Temperatura predefinita (°C)", min_value=150.0, value=200.0, step=5.0)
+            default_bed_temperature = st.number_input("Temperatura piano (°C)", min_value=0.0, value=60.0, step=5.0)
+            retraction_enabled = st.checkbox("Retrazione attiva", value=True)
+            retraction_distance = st.number_input("Distanza retrazione (mm)", min_value=0.0, value=6.0, step=0.5)
+            retraction_speed = st.number_input("Velocità retrazione (mm/s)", min_value=10.0, value=25.0, step=5.0)
 
-        # Animazione di caricamento e transizione
-        with st.empty():
-            materials = fetch_materials()
-            if materials:
-                for material in materials:
-                    with st.container():
-                        col1, col2, col3 = st.columns([3, 1, 1])
-                        with col1:
-                            st.markdown(f"#### {material['name']}")
-                            st.write(f"Densità: {material['density']} g/cm³ | Costo: €{material['cost_per_kg']}/kg")
-                        with col2:
-                            if st.button("✏️ Modifica", key=f"edit_{material['id']}"):
-                                st.session_state.editing_material = material
-                                st.rerun()
-                        with col3:
-                            if st.button("🗑️ Elimina", key=f"delete_{material['id']}"):
-                                if delete_material(material['id']):
-                                    st.rerun()
-                        st.markdown("---")
+        if st.button("➕ Aggiungi Materiale"):
+            material_data = {
+                "name": name,
+                "density": density,
+                "cost_per_kg": cost_per_kg,
+                "min_layer_height": min_layer_height,
+                "max_layer_height": max_layer_height,
+                "default_temperature": default_temperature,
+                "default_bed_temperature": default_bed_temperature,
+                "retraction_enabled": retraction_enabled,
+                "retraction_distance": retraction_distance,
+                "retraction_speed": retraction_speed,
+                "print_speed": 60.0,
+                "first_layer_speed": 30.0,
+                "fan_speed": 100,
+                "flow_rate": 100
+            }
+            if add_material(material_data):
+                st.rerun()
 
-                # Form di modifica se un materiale è selezionato
-                if st.session_state.editing_material:
-                    st.subheader(f"✏️ Modifica {st.session_state.editing_material['name']}")
-                    with st.form("edit_material_form"):
-                        material_data = material_form(st.session_state.editing_material)
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.form_submit_button("💾 Salva Modifiche"):
-                                if update_material(st.session_state.editing_material['id'], material_data):
-                                    st.session_state.editing_material = None
-                                    st.rerun()
-                        with col2:
-                            if st.form_submit_button("❌ Annulla"):
-                                st.session_state.editing_material = None
-                                st.rerun()
+    # Lista dei materiali esistenti
+    st.markdown("### 📋 Materiali Esistenti")
+    materials = fetch_materials()
 
-    with tab2:
-        st.subheader("➕ Aggiungi Nuovo Materiale")
-        with st.form("new_material_form"):
-            material_data = material_form()
-            if st.form_submit_button("➕ Aggiungi Materiale"):
-                if add_material(material_data):
+    if not materials:
+        st.info("Nessun materiale presente. Aggiungi il tuo primo materiale!")
+        return
+
+    # Visualizza i materiali come cards
+    for material in materials:
+        with st.container():
+            col1, col2, col3 = st.columns([3, 1, 1])
+
+            with col1:
+                st.markdown(f"#### {material['name']}")
+                st.markdown(f"""
+                - Densità: {material['density']} g/cm³
+                - Costo: €{material['cost_per_kg']}/kg
+                - Layer: {material['min_layer_height']}-{material['max_layer_height']} mm
+                """)
+
+            with col2:
+                if st.button("✏️ Modifica", key=f"edit_{material['id']}"):
+                    st.session_state.editing_material_id = material['id']
                     st.rerun()
+
+            with col3:
+                if st.button("🗑️ Elimina", key=f"delete_{material['id']}"):
+                    if delete_material(material['id']):
+                        st.rerun()
+
+            # Se questo materiale è in modalità modifica
+            if st.session_state.get('editing_material_id') == material['id']:
+                with st.container():
+                    st.markdown("#### Modifica Materiale")
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        new_name = st.text_input("Nome", value=material['name'], key=f"edit_name_{material['id']}")
+                        new_density = st.number_input("Densità", value=material['density'], key=f"edit_density_{material['id']}")
+                        new_cost = st.number_input("Costo per kg", value=material['cost_per_kg'], key=f"edit_cost_{material['id']}")
+
+                    with col2:
+                        new_min_layer = st.number_input("Min Layer", value=material['min_layer_height'], key=f"edit_min_{material['id']}")
+                        new_max_layer = st.number_input("Max Layer", value=material['max_layer_height'], key=f"edit_max_{material['id']}")
+
+                    col3, col4 = st.columns(2)
+                    with col3:
+                        if st.button("💾 Salva", key=f"save_{material['id']}"):
+                            updated_data = {
+                                "name": new_name,
+                                "density": new_density,
+                                "cost_per_kg": new_cost,
+                                "min_layer_height": new_min_layer,
+                                "max_layer_height": new_max_layer
+                            }
+                            if update_material(material['id'], updated_data):
+                                st.session_state.editing_material_id = None
+                                st.rerun()
+
+                    with col4:
+                        if st.button("❌ Annulla", key=f"cancel_{material['id']}"):
+                            st.session_state.editing_material_id = None
+                            st.rerun()
+
+            st.markdown("---")
