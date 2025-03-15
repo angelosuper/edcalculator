@@ -208,16 +208,21 @@ def main():
                         file_content = uploaded_file.getvalue()
                         file_base64 = base64.b64encode(file_content).decode()
 
+                        # URL encode the base64 string
+                        encoded_stl = file_base64.replace('+', '-').replace('/', '_').replace('=', '')
+
                         # Crea il visualizzatore con ViewSTL
-                        st.components.v1.html(
-                            f"""
-                            <iframe id="vs_iframe" 
-                                src="https://www.viewstl.com/?embedded&color=azure&bgcolor=transparent&model=data:model/stl;base64,{file_base64}"
-                                style="border:0;margin:0;width:100%;height:400px;">
-                            </iframe>
-                            """,
-                            height=400
-                        )
+                        viewer_html = f"""
+                        <iframe id="vs_iframe" 
+                            src="https://www.viewstl.com/?embedded&color=azure&bgcolor=transparent&model=data:model/stl;base64,{encoded_stl}" 
+                            style="border:1px solid #ddd;margin:0;width:100%;height:400px;">
+                        </iframe>
+                        """
+                        st.components.v1.html(viewer_html, height=400)
+
+                        # Log per debug
+                        logger.info(f"Lunghezza base64: {len(file_base64)}")
+                        logger.info(f"URL STL: data:model/stl;base64,{encoded_stl[:100]}...")
 
                     except Exception as e:
                         st.error(f"Errore nel visualizzatore 3D: {str(e)}")
