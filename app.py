@@ -150,17 +150,29 @@ def main():
                         # Crea il visualizzatore
                         st.components.v1.html(
                             f"""
-                            <div style="width:100%; height:400px; border:1px solid #ddd">
-                                <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-                                <model-viewer
-                                    style="width:100%; height:100%"
-                                    camera-controls
-                                    auto-rotate
-                                    shadow-intensity="1"
-                                    src="data:model/stl;base64,{file_base64}"
-                                    alt="3D model viewer"
-                                ></model-viewer>
-                            </div>
+                            <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd"></div>
+                            <script src="https://files.replit.com/libs/stl-viewer/stl_viewer.min.js"></script>
+                            <script>
+                                var stl_viewer = new StlViewer(
+                                    document.getElementById("stl_viewer"),
+                                    {{
+                                        models: [
+                                            {{
+                                                id: 0,
+                                                content: "data:model/stl;base64,{file_base64}",
+                                                color: "#1E88E5",
+                                                rotationX: 0,
+                                                rotationY: 0,
+                                                rotationZ: 0,
+                                                scale: 1
+                                            }}
+                                        ],
+                                        auto_rotate: false,
+                                        allow_drag_and_drop: true,
+                                        camera_controls: true
+                                    }}
+                                );
+                            </script>
                             """,
                             height=400
                         )
