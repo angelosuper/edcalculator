@@ -119,33 +119,33 @@ def materials_manager_page():
     # Sezione per aggiungere un nuovo materiale
     with st.expander("➕ Aggiungi Nuovo Materiale", expanded=False):
         # Parametri principali
-        st.subheader("Parametri Principali")
+        st.subheader("Parametri Base")
         col1, col2 = st.columns(2)
 
         with col1:
             name = st.text_input("Nome del materiale")
-            density = st.number_input("Densità (g/cm³)", min_value=0.1, value=1.24, step=0.01)
-            cost_per_kg = st.number_input("Costo per kg (€)", min_value=0.1, value=20.0, step=0.1)
-            min_layer_height = st.number_input("Altezza minima layer (mm)", min_value=0.05, value=0.1, step=0.05)
-            max_layer_height = st.number_input("Altezza massima layer (mm)", min_value=0.1, value=0.3, step=0.05)
+            density = st.number_input("Densità (g/cm³)", min_value=0.1, value=1.24, step=0.01, help="Densità del materiale in grammi per centimetro cubo")
+            cost_per_kg = st.number_input("Costo per kg (€)", min_value=0.1, value=20.0, step=0.1, help="Costo del materiale per chilogrammo")
+            min_layer_height = st.number_input("Altezza minima layer (mm)", min_value=0.05, value=0.1, step=0.05, help="Altezza minima possibile per ogni strato")
+            max_layer_height = st.number_input("Altezza massima layer (mm)", min_value=0.1, value=0.3, step=0.05, help="Altezza massima possibile per ogni strato")
 
         with col2:
-            print_speed = st.number_input("Velocità di stampa (mm/s)", min_value=10.0, value=60.0, step=5.0)
-            hourly_cost = st.number_input("Costo orario stampante (€/h)", min_value=1.0, value=30.0, step=1.0)
-            default_temperature = st.number_input("Temperatura predefinita (°C)", min_value=150.0, value=200.0, step=5.0)
-            default_bed_temperature = st.number_input("Temperatura piano (°C)", min_value=0.0, value=60.0, step=5.0)
+            print_speed = st.number_input("Velocità di stampa (mm/s)", min_value=10.0, value=60.0, step=5.0, help="Velocità di stampa standard")
+            hourly_cost = st.number_input("Costo orario stampante (€/h)", min_value=1.0, value=30.0, step=1.0, help="Costo orario di utilizzo della stampante")
+            default_temperature = st.number_input("Temperatura predefinita (°C)", min_value=150.0, value=200.0, step=5.0, help="Temperatura di stampa consigliata")
+            default_bed_temperature = st.number_input("Temperatura piano (°C)", min_value=0.0, value=60.0, step=5.0, help="Temperatura del piano di stampa consigliata")
 
         # Parametri avanzati
         st.subheader("Parametri Avanzati")
         col3, col4 = st.columns(2)
 
         with col3:
-            retraction_enabled = st.checkbox("Retrazione attiva", value=True)
-            retraction_distance = st.number_input("Distanza retrazione (mm)", min_value=0.0, value=6.0, step=0.5)
+            retraction_enabled = st.checkbox("Retrazione attiva", value=True, help="Abilita/disabilita la retrazione del filamento")
+            retraction_distance = st.number_input("Distanza retrazione (mm)", min_value=0.0, value=6.0, step=0.5, help="Distanza di retrazione del filamento")
 
         with col4:
-            retraction_speed = st.number_input("Velocità retrazione (mm/s)", min_value=10.0, value=25.0, step=5.0)
-            first_layer_speed = st.number_input("Velocità primo layer (mm/s)", min_value=5.0, value=30.0, step=5.0)
+            retraction_speed = st.number_input("Velocità retrazione (mm/s)", min_value=10.0, value=25.0, step=5.0, help="Velocità di retrazione del filamento")
+            first_layer_speed = st.number_input("Velocità primo layer (mm/s)", min_value=5.0, value=30.0, step=5.0, help="Velocità di stampa per il primo strato")
 
         if st.button("➕ Aggiungi Materiale"):
             material_data = {
@@ -222,21 +222,22 @@ def materials_manager_page():
             if st.session_state.get('editing_material_id') == material['id']:
                 st.markdown("#### Modifica Materiale")
                 # Parametri principali
-                st.subheader("Parametri Principali")
+                st.subheader("Parametri Base")
                 col1, col2 = st.columns(2)
 
                 with col1:
                     new_name = st.text_input("Nome", value=material['name'], key=f"edit_name_{material['id']}")
                     new_density = st.number_input("Densità", value=material['density'], key=f"edit_density_{material['id']}")
                     new_cost = st.number_input("Costo per kg", value=material['cost_per_kg'], key=f"edit_cost_{material['id']}")
-                    new_min_layer = st.number_input("Min Layer", value=material['min_layer_height'], key=f"edit_min_{material['id']}")
-                    new_max_layer = st.number_input("Max Layer", value=material['max_layer_height'], key=f"edit_max_{material['id']}")
+                    new_min_layer = st.number_input("Altezza min. layer", value=material['min_layer_height'], key=f"edit_min_{material['id']}")
+                    new_max_layer = st.number_input("Altezza max. layer", value=material['max_layer_height'], key=f"edit_max_{material['id']}")
 
                 with col2:
                     new_hourly_cost = st.number_input("Costo orario macchina (€/h)", 
                         value=material.get('hourly_cost', 30), 
                         min_value=0.1,
                         step=1.0,
+                        help="Costo orario di utilizzo della stampante",
                         key=f"edit_hourly_{material['id']}"
                     )
                     new_print_speed = st.number_input("Velocità di stampa", value=material['print_speed'], key=f"edit_speed_{material['id']}")
