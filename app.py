@@ -19,16 +19,13 @@ def configure_theme():
         st.title("📌 Navigazione")
         st.markdown("---")
 
-        # Selettore tema
-        theme = st.radio(
-            "🎨 Tema:",
-            ["☀️ Modalità Giorno", "🌙 Modalità Notte"],
-            index=1 if st.session_state.dark_mode else 0,
-            key="theme_selector"
-        )
-
-        # Aggiorna il tema
-        st.session_state.dark_mode = theme == "🌙 Modalità Notte"
+        # Pulsante tema
+        if st.button(
+            "🌙" if not st.session_state.dark_mode else "☀️",
+            help="Cambia tema chiaro/scuro",
+            key="theme_button"
+        ):
+            st.session_state.dark_mode = not st.session_state.dark_mode
 
         # Applica il tema
         if st.session_state.dark_mode:
