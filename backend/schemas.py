@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict, Any
 
 # Material schemas
 class MaterialBase(BaseModel):
@@ -69,6 +69,44 @@ class EnergyCostCreate(EnergyCostBase):
     pass
 
 class EnergyCost(EnergyCostBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class ModelCharacteristicsBase(BaseModel):
+    file_hash: str
+    volume: float
+    surface_area: float
+    max_overhang_angle: float
+    has_supports: bool
+    complexity_score: float
+    recommended_settings: Dict[str, Any]
+
+class ModelCharacteristicsCreate(ModelCharacteristicsBase):
+    pass
+
+class ModelCharacteristics(ModelCharacteristicsBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class PrintRecommendationBase(BaseModel):
+    material_id: int
+    model_hash: str
+    layer_height: float = Field(..., gt=0, description="Altezza layer in mm")
+    print_speed: float = Field(..., gt=0, description="Velocità di stampa in mm/s")
+    temperature: float = Field(..., gt=0, description="Temperatura di stampa in °C")
+    bed_temperature: float = Field(..., gt=0, description="Temperatura del piano in °C")
+    fan_speed: int = Field(..., ge=0, le=100, description="Velocità ventola in %")
+    success_rating: Optional[float] = Field(None, ge=0, le=5, description="Valutazione successo stampa")
+    feedback: Optional[str] = None
+
+class PrintRecommendationCreate(PrintRecommendationBase):
+    pass
+
+class PrintRecommendation(PrintRecommendationBase):
     id: int
 
     class Config:

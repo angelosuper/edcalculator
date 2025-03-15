@@ -171,6 +171,55 @@ def main():
                     file_content = uploaded_file.getvalue()
                     volume, vertices, dimensions = process_stl(file_content)
 
+                    # Ottieni raccomandazioni dal backend
+                    try:
+                        files = {'file': ('model.stl', file_content, 'application/octet-stream')}
+                        params = {'material_id': material_options[selected_material_display]}
+                        response = requests.post(
+                            f"{os.getenv('BACKEND_URL', 'http://localhost:8000')}/analyze-model/",
+                            files=files,
+                            params=params
+                        )
+                        if response.status_code == 200:
+                            recommendations = response.json()
+                            st.success("✨ Raccomandazioni generate con successo!")
+
+                            # Mostra raccomandazioni
+                            st.subheader("📋 Raccomandazioni di Stampa")
+                            rec_col1, rec_col2 = st.columns(2)
+
+                            with rec_col1:
+                                st.metric(
+                                    "Altezza Layer Consigliata",
+                                    f"{recommendations['recommended_settings']['layer_height']:.2f} mm"
+                                )
+                                st.metric(
+                                    "Velocità Consigliata",
+                                    f"{recommendations['recommended_settings']['print_speed']:.0f} mm/s"
+                                )
+
+                            with rec_col2:
+                                st.metric(
+                                    "Temperatura Consigliata",
+                                    f"{recommendations['recommended_settings']['temperature']:.0f}°C"
+                                )
+                                st.metric(
+                                    "Ventola",
+                                    f"{recommendations['recommended_settings']['fan_speed']}%"
+                                )
+
+                            if recommendations['has_supports']:
+                                st.warning("⚠️ Questo modello richiede supporti")
+
+                            # Mostra punteggio di complessità
+                            complexity = recommendations['complexity_score']
+                            st.progress(complexity / 100)
+                            st.caption(f"Complessità del modello: {complexity:.0f}/100")
+
+                    except Exception as e:
+                        logger.error(f"Errore nel recupero delle raccomandazioni: {str(e)}")
+                        st.warning("Non è stato possibile ottenere raccomandazioni personalizzate")
+
                     # Calcola costi
                     calculations = calculate_print_cost(volume, material_props, layer_height, velocita_stampa)
 

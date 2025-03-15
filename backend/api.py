@@ -1,9 +1,15 @@
 import logging
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
+import numpy as np
 
 from . import models, schemas, database
+from .recommendation_engine import (
+    analyze_model_characteristics,
+    generate_print_recommendations
+)
+from stl_processor import process_stl  # Importa la funzione esistente
 
 # Configura logging
 logging.basicConfig(level=logging.INFO)
@@ -15,6 +21,63 @@ app = FastAPI(title="3D Print Cost Calculator API")
 @app.on_event("startup")
 async def startup_event():
     database.init_db()
+
+# Endpoint per analizzare un modello e ottenere raccomandazioni
+@app.post("/analyze-model/", response_model=schemas.ModelCharacteristics)
+async def analyze_model(
+    file: UploadFile = File(...),
+    material_id: int = None,
+    db: Session = Depends(database.get_db)
+):
+    try:
+        # Leggi il contenuto del file
+        file_content = await file.read()
+
+        # Processa il file STL
+        volume, vertices, dimensions = process_stl(file_content)
+
+        # Analizza le caratteristiche del modello
+        characteristics = analyze_model_characteristics(
+            file_content,
+            volume,
+            vertices
+        )
+
+        # Se è specificato un materiale, genera raccomandazioni
+        if material_id:
+            recommendations = generate_print_recommendations(
+                db,
+                characteristics,
+                material_id
+            )
+            characteristics.recommended_settings = recommendations
+
+        # Salva le caratteristiche nel database
+        db_characteristics = models.ModelCharacteristics(**characteristics.dict())
+        db.add(db_characteristics)
+        db.commit()
+        db.refresh(db_characteristics)
+
+        return db_characteristics
+    except Exception as e:
+        logger.error(f"Errore nell'analisi del modello: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Endpoint per salvare il feedback sulla stampa
+@app.post("/print-feedback/", response_model=schemas.PrintRecommendation)
+def save_print_feedback(
+    feedback: schemas.PrintRecommendationCreate,
+    db: Session = Depends(database.get_db)
+):
+    try:
+        db_feedback = models.PrintRecommendation(**feedback.dict())
+        db.add(db_feedback)
+        db.commit()
+        db.refresh(db_feedback)
+        return db_feedback
+    except Exception as e:
+        logger.error(f"Errore nel salvare il feedback: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Materials endpoints
 @app.get("/materials/", response_model=List[schemas.Material])
