@@ -136,4 +136,4 @@ def materials_manager_page():
                     "flow_rate": flow_rate
                 }
                 if add_material(material_data):
-                    st.rerun()
+                    st.experimental_rerun()
