@@ -78,7 +78,7 @@ def update_material(
         logger.error(f"Error updating material: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/materials/{material_id}", response_model=dict)
+@app.delete("/materials/{material_id}")
 def delete_material(material_id: int, db: Session = Depends(database.get_db)):
     logger.info(f"Deleting material with id: {material_id}")
     db_material = db.query(models.Material).filter(models.Material.id == material_id).first()
@@ -95,7 +95,6 @@ def delete_material(material_id: int, db: Session = Depends(database.get_db)):
         db.rollback()
         logger.error(f"Error deleting material: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # Printers endpoints
 @app.post("/printers/", response_model=schemas.Printer)

@@ -23,6 +23,10 @@ args = "3D Print Calculator"
 task = "workflow.run"
 args = "3D Print Calculator Backend"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Backend Server"
+
 [[workflows.workflow]]
 name = "3D Print Calculator"
 author = "agent"
@@ -51,6 +55,21 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "uvicorn backend.api:app --host 0.0.0.0 --port 8000"
+waitForPort = 8000
+
+[[workflows.workflow]]
+name = "Backend Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m uvicorn backend.api:app --host 0.0.0.0 --port 8000 --log-level debug"
 waitForPort = 8000
 
 [[ports]]

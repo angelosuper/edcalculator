@@ -1,33 +1,48 @@
 import os
 import logging
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
+from .base import Base
 
 # Configura logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
+# Get database URL from environment
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+if not SQLALCHEMY_DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set")
 
-# Ensure database URL is properly formatted for PostgreSQL
-if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+logger.info(f"Database URL format: {SQLALCHEMY_DATABASE_URL[:15]}...")
+
+# Fix per la compatibilità con SQLAlchemy
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    logger.info("Converted postgres:// to postgresql:// in database URL")
 
-logger.info(f"Connecting to database...")
+try:
+    logger.info("Creating database engine...")
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+        echo=True
+    )
 
-# Add SSL mode=require and other connection parameters
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={
-        "sslmode": "require"
-    },
-    echo=True  # Enable SQL logging
-)
+    # Test connection
+    with engine.connect() as conn:
+        logger.info("Database connection successful")
+
+    logger.info("Database engine created successfully")
+except Exception as e:
+    logger.error(f"Error creating database engine: {str(e)}")
+    raise
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
 
 def get_db():
     db = SessionLocal()
@@ -41,14 +56,20 @@ def init_db():
     try:
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
 
-        # Add default materials if they don't exist
+        # Verify tables
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        logger.info(f"Created tables: {tables}")
+
         from . import models
         db = SessionLocal()
         try:
             # Check if we have any materials
-            if db.query(models.Material).count() == 0:
+            existing_materials = db.query(models.Material).count()
+            logger.info(f"Found {existing_materials} existing materials")
+
+            if existing_materials == 0:
                 logger.info("Adding default materials...")
                 default_materials = [
                     models.Material(
@@ -116,14 +137,20 @@ def init_db():
                         flow_rate=110
                     )
                 ]
-                db.bulk_save_objects(default_materials)
+
+                for material in default_materials:
+                    db.add(material)
+
                 db.commit()
                 logger.info("Default materials added successfully")
+
         except Exception as e:
             logger.error(f"Error adding default materials: {str(e)}")
             db.rollback()
+            raise
         finally:
             db.close()
+
     except Exception as e:
-        logger.error(f"Error creating database tables: {str(e)}")
+        logger.error(f"Error initializing database: {str(e)}")
         raise

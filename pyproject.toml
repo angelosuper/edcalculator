@@ -11,10 +11,11 @@ dependencies = [
     "pydantic>=2.10.6",
     "sqlalchemy>=2.0.39",
     "streamlit>=1.43.2",
-    "uvicorn>=0.34.0",
+    "uvicorn[standard]>=0.34.0",
     "stl>=0.0.3",
     "numpy>=2.2.3",
     "numpy-stl>=3.2.0",
     "requests>=2.32.3",
     "openai>=1.66.3",
+    "python-multipart>=0.0.20",
 ]
