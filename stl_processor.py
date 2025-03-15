@@ -5,15 +5,15 @@ import io
 import tempfile
 import os
 
-def process_stl(file_content: bytes) -> tuple[float, NDArray]:
+def process_stl(file_content: bytes) -> tuple[float, NDArray, dict]:
     """
-    Process STL file and return volume and vertices for visualization
+    Process STL file and return volume, vertices and dimensions for visualization
 
     Args:
         file_content: Binary content of the STL file
 
     Returns:
-        tuple: (volume in cm³, vertices array for plotting)
+        tuple: (volume in cm³, vertices array for plotting, dimensions in mm)
     """
     try:
         # Create a temporary file
@@ -33,7 +33,14 @@ def process_stl(file_content: bytes) -> tuple[float, NDArray]:
             # Get vertices for visualization
             vertices = stl_mesh.vectors.reshape(-1, 3)
 
-            return volume, vertices
+            # Calculate dimensions in mm
+            dimensions = {
+                'width': round(np.max(vertices[:, 0]) - np.min(vertices[:, 0]), 2),
+                'depth': round(np.max(vertices[:, 1]) - np.min(vertices[:, 1]), 2),
+                'height': round(np.max(vertices[:, 2]) - np.min(vertices[:, 2]), 2)
+            }
+
+            return volume, vertices, dimensions
         finally:
             # Clean up the temporary file
             if os.path.exists(tmp_file_path):

@@ -143,7 +143,7 @@ def main():
             try:
                 # Processa file STL
                 file_content = uploaded_file.read()
-                volume, vertices = process_stl(file_content)
+                volume, vertices, dimensions = process_stl(file_content)
 
                 # Calcola costi
                 calculations = calculate_print_cost(volume, material_props, layer_height, velocita_stampa)
@@ -158,6 +158,16 @@ def main():
                     st.metric("Peso", f"{calculations['weight_kg']} kg")
                 with col3:
                     st.metric("Costo Totale", f"€{calculations['total_cost']}")
+
+                # Mostra dimensioni
+                st.subheader("Dimensioni Oggetto")
+                dim_col1, dim_col2, dim_col3 = st.columns(3)
+                with dim_col1:
+                    st.metric("Larghezza", f"{dimensions['width']} mm")
+                with dim_col2:
+                    st.metric("Profondità", f"{dimensions['depth']} mm")
+                with dim_col3:
+                    st.metric("Altezza", f"{dimensions['height']} mm")
 
                 # Dettaglio costi
                 st.subheader("Dettaglio Costi")
