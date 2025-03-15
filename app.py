@@ -34,8 +34,6 @@ def main():
             ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
             format_func=lambda x: x.split(" ", 1)[1]
         )
-        st.markdown("---")
-        st.info("Usa il menu sopra per navigare tra le sezioni dell'applicazione")
 
     # Contenuto principale
     if page == "🧮 Calcolo Costi":
@@ -148,14 +146,17 @@ def main():
                         <script>
                             var stl_viewer = new StlViewer(
                                 document.getElementById("stl_viewer"),
-                                {
+                                {{
                                     models: [
-                                        {{filename: "{uploaded_file.name}", color: "#1E88E5"}}
+                                        {{
+                                            filename: "{uploaded_file.name}",
+                                            color: "#1E88E5"
+                                        }}
                                     ],
                                     auto_rotate: true,
                                     allow_drag_and_drop: true,
                                     camera_controls: true
-                                }
+                                }}
                             );
                         </script>
                         """,
