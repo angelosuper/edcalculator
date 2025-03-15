@@ -82,7 +82,12 @@ def create_3d_visualization(vertices, visualization_mode='points'):
     fig = go.Figure(data=[trace])
     fig.update_layout(
         scene=dict(
-            aspectmode='data',
+            aspectmode='manual',  # Imposta manualmente le proporzioni
+            aspectratio=dict(
+                x=195.84/122.4,  # Proporzione basata sulla lunghezza
+                y=1,             # Larghezza come riferimento
+                z=200/122.4      # Proporzione basata sull'altezza
+            ),
             camera=dict(
                 up=dict(x=0, y=1, z=0),
                 center=dict(x=0, y=0, z=0),
@@ -94,7 +99,8 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                 gridcolor='lightgray',
                 zeroline=True,
                 zerolinewidth=2,
-                zerolinecolor='gray'
+                zerolinecolor='gray',
+                range=[-97.92, 97.92]  # ±195.84/2 mm
             ),
             yaxis=dict(
                 showgrid=True,
@@ -102,7 +108,8 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                 gridcolor='lightgray',
                 zeroline=True,
                 zerolinewidth=2,
-                zerolinecolor='gray'
+                zerolinecolor='gray',
+                range=[-61.2, 61.2]    # ±122.4/2 mm
             ),
             zaxis=dict(
                 showgrid=True,
@@ -110,7 +117,8 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                 gridcolor='lightgray',
                 zeroline=True,
                 zerolinewidth=2,
-                zerolinecolor='gray'
+                zerolinecolor='gray',
+                range=[0, 200]         # 0-200 mm altezza
             ),
             dragmode='orbit'  # Abilita la rotazione tramite drag
         ),
@@ -126,7 +134,7 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                         label='Vista Frontale',
                         method='relayout',
                         args=[{'scene.camera': dict(
-                            eye=dict(x=0, y=0, z=2),
+                            eye=dict(x=0, y=0, z=100),
                             up=dict(x=0, y=1, z=0),
                             center=dict(x=0, y=0, z=0)
                         )}]
@@ -135,7 +143,7 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                         label='Vista Laterale',
                         method='relayout',
                         args=[{'scene.camera': dict(
-                            eye=dict(x=2, y=0, z=0),
+                            eye=dict(x=100, y=0, z=0),
                             up=dict(x=0, y=1, z=0),
                             center=dict(x=0, y=0, z=0)
                         )}]
@@ -144,7 +152,7 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                         label='Vista Dall\'alto',
                         method='relayout',
                         args=[{'scene.camera': dict(
-                            eye=dict(x=0, y=2, z=0),
+                            eye=dict(x=0, y=100, z=0),
                             up=dict(x=0, y=0, z=-1),
                             center=dict(x=0, y=0, z=0)
                         )}]
@@ -153,7 +161,7 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                         label='Vista Isometrica',
                         method='relayout',
                         args=[{'scene.camera': dict(
-                            eye=dict(x=1.5, y=1.5, z=1.5),
+                            eye=dict(x=150, y=150, z=150),
                             up=dict(x=0, y=1, z=0),
                             center=dict(x=0, y=0, z=0)
                         )}]
