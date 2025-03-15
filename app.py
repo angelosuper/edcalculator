@@ -4,6 +4,8 @@ import numpy as np
 import requests
 import pandas as pd
 import json
+import base64
+import io
 
 from stl_processor import process_stl, calculate_print_cost
 from materials_manager import materials_manager_page, fetch_materials
@@ -137,31 +139,94 @@ def main():
                     st.write(f"Costo Materiale: €{calculations['material_cost']}")
                     st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-                    # Visualizzazione 3D con STL.js
+                    # Visualizzazione 3D con Three.js
                     st.subheader("Anteprima Modello")
-                    st.components.v1.html(
-                        f"""
-                        <div id="stl_viewer" style="width:100%; height:400px;"></div>
-                        <script src="https://cdn.jsdelivr.net/npm/stl-viewer@0.12.0/stl_viewer.min.js"></script>
-                        <script>
-                            var stl_viewer = new StlViewer(
-                                document.getElementById("stl_viewer"),
-                                {{
-                                    models: [
-                                        {{
-                                            filename: "{uploaded_file.name}",
-                                            color: "#1E88E5"
-                                        }}
-                                    ],
-                                    auto_rotate: true,
-                                    allow_drag_and_drop: true,
-                                    camera_controls: true
+
+                    try:
+                        # Converti il file STL in base64
+                        file_content = uploaded_file.getvalue()
+                        file_base64 = base64.b64encode(file_content).decode()
+
+                        # Crea il visualizzatore Three.js
+                        st.components.v1.html(
+                            f"""
+                            <div id="stl_viewer" style="width:100%; height:400px;"></div>
+                            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r132/three.min.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/STLLoader.js"></script>
+                            <script>
+                                const container = document.getElementById('stl_viewer');
+                                const scene = new THREE.Scene();
+                                scene.background = new THREE.Color(0xffffff);
+
+                                // Imposta la camera
+                                const camera = new THREE.PerspectiveCamera(75, container.clientWidth/container.clientHeight, 0.1, 1000);
+                                const renderer = new THREE.WebGLRenderer({antialias: true});
+                                renderer.setSize(container.clientWidth, container.clientHeight);
+                                container.appendChild(renderer.domElement);
+
+                                // Illuminazione
+                                const ambientLight = new THREE.AmbientLight(0x404040);
+                                scene.add(ambientLight);
+                                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+                                directionalLight.position.set(1, 1, 1);
+                                scene.add(directionalLight);
+
+                                // Controlli della camera
+                                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                                controls.enableDamping = true;
+                                controls.dampingFactor = 0.05;
+                                camera.position.z = 5;
+
+                                // Carica il modello STL
+                                const binary = atob("{file_base64}");
+                                const buffer = new ArrayBuffer(binary.length);
+                                const view = new Uint8Array(buffer);
+                                for (let i = 0; i < binary.length; i++) {{
+                                    view[i] = binary.charCodeAt(i);
                                 }}
-                            );
-                        </script>
-                        """,
-                        height=400
-                    )
+
+                                const loader = new THREE.STLLoader();
+                                const geometry = loader.parse(buffer);
+                                const material = new THREE.MeshPhongMaterial({{
+                                    color: 0x1E88E5,
+                                    specular: 0x111111,
+                                    shininess: 200
+                                }});
+                                const mesh = new THREE.Mesh(geometry, material);
+
+                                // Centra il modello
+                                geometry.computeBoundingBox();
+                                const center = geometry.boundingBox.getCenter(new THREE.Vector3());
+                                geometry.translate(-center.x, -center.y, -center.z);
+                                scene.add(mesh);
+
+                                // Adatta la camera al modello
+                                const box = new THREE.Box3().setFromObject(mesh);
+                                const size = box.getSize(new THREE.Vector3());
+                                const maxDim = Math.max(size.x, size.y, size.z);
+                                camera.position.z = maxDim * 2;
+                                controls.update();
+
+                                function animate() {{
+                                    requestAnimationFrame(animate);
+                                    controls.update();
+                                    renderer.render(scene, camera);
+                                }}
+                                animate();
+
+                                // Gestione del ridimensionamento
+                                window.addEventListener('resize', function() {{
+                                    camera.aspect = container.clientWidth / container.clientHeight;
+                                    camera.updateProjectionMatrix();
+                                    renderer.setSize(container.clientWidth, container.clientHeight);
+                                }}, false);
+                            </script>
+                            """,
+                            height=400
+                        )
+                    except Exception as e:
+                        st.error(f"Errore nella visualizzazione del modello 3D: {str(e)}")
 
                 except Exception as e:
                     st.error(f"Errore nel processare il file: {str(e)}")
