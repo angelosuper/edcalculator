@@ -16,7 +16,7 @@ def configure_theme():
 
     # Sidebar per le impostazioni del tema
     with st.sidebar:
-        st.title("📌 Navigazione")
+        st.title("Navigazione")
         st.markdown("---")
 
         # Pulsante tema
@@ -31,12 +31,51 @@ def configure_theme():
         if st.session_state.dark_mode:
             st.markdown("""
                 <style>
+                    :root {
+                        --background-color: #1b1e23;
+                        --secondary-background-color: #262730;
+                        --text-color: #fafafa;
+                        --primary-color: #0066cc;
+                        --hover-color: #2d3035;
+                    }
                     /* Tema generale */
                     .stApp {
                         background-color: #0e1117;
                         color: #fafafa;
                     }
 
+                    /* DataFrames/Tabelle */
+                    .dataframe {
+                        background-color: var(--background-color) !important;
+                        color: var(--text-color) !important;
+                        border: 1px solid #464855;
+                    }
+                    .dataframe th {
+                        background-color: var(--secondary-background-color) !important;
+                        color: #ffffff !important;
+                        border: 1px solid #464855 !important;
+                    }
+                    .dataframe td {
+                        background-color: var(--background-color) !important;
+                        border: 1px solid #464855 !important;
+                        color: var(--text-color) !important;
+                    }
+
+                    /* File uploader */
+                    [data-testid="stFileUploader"] {
+                        background-color: var(--background-color) !important;
+                        border: 1px dashed #464855 !important;
+                        color: var(--text-color) !important;
+                    }
+                    [data-testid="stFileUploader"]:hover {
+                        border-color: var(--primary-color) !important;
+                    }
+                    [data-testid="stFileUploader"] > div {
+                        background-color: var(--background-color) !important;
+                    }
+                    [data-testid="stFileUploader"] span {
+                        color: var(--text-color) !important;
+                    }
                     /* Bottoni */
                     .stButton>button {
                         background-color: #262730;
@@ -72,22 +111,6 @@ def configure_theme():
                         background-color: #464855;
                     }
 
-                    /* DataFrames/Tabelle */
-                    .dataframe {
-                        background-color: #1b1e23;
-                        color: #fafafa;
-                        border: 1px solid #464855;
-                    }
-                    .dataframe th {
-                        background-color: #262730;
-                        color: #ffffff;
-                        border: 1px solid #464855;
-                    }
-                    .dataframe td {
-                        background-color: #1b1e23;
-                        border: 1px solid #464855;
-                    }
-
                     /* Tabs */
                     .stTabs [data-baseweb="tab-list"] {
                         background-color: #262730;
@@ -100,18 +123,6 @@ def configure_theme():
                         background-color: #0066cc;
                     }
 
-                    /* File uploader */
-                    [data-testid="stFileUploader"] {
-                        background-color: #262730;
-                        border: 1px dashed #464855;
-                        color: #fafafa;
-                    }
-                    [data-testid="stFileUploader"]:hover {
-                        border-color: #6c757d;
-                    }
-                    [data-testid="stFileUploader"] > div {
-                        background-color: #262730;
-                    }
 
                     /* Contenitori e card */
                     [data-testid="stDecoration"], div.stBlock {
@@ -143,15 +154,28 @@ def configure_theme():
                 </style>
                 """, unsafe_allow_html=True)
 
+        else:
+            st.markdown("""
+                <style>
+                    :root {
+                        --background-color: #ffffff;
+                        --secondary-background-color: #f0f2f6;
+                        --text-color: #262730;
+                        --primary-color: #0066cc;
+                        --hover-color: #f8f9fa;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+
         st.markdown("---")
         # Menu di navigazione
         page = st.radio(
-            "📍 Seleziona una sezione:",
+            "Seleziona una sezione:",
             ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
             format_func=lambda x: x.split(" ", 1)[1]
         )
         st.markdown("---")
-        st.info("👆 Usa il menu sopra per navigare tra le sezioni dell'applicazione")
+        st.info("Usa il menu sopra per navigare tra le sezioni dell'applicazione")
 
         return page
 
@@ -350,7 +374,7 @@ def main():
 
     # Contenuto principale
     if page == "🧮 Calcolo Costi":
-        st.title("🧮 Calcolatore Costi Stampa 3D")
+        st.title("Calcolatore Costi Stampa 3D")
         # Recupera materiali dal backend
         materials_data = get_materials_from_api()
 
@@ -362,6 +386,8 @@ def main():
         st.subheader("Selezione Materiale")
         materials_df = pd.DataFrame.from_dict(materials_data, orient='index')
         materials_df.index.name = 'Materiale'
+
+
         st.dataframe(materials_df.rename(columns={
             'density': 'Densità (g/cm³)',
             'cost_per_kg': 'Costo per kg (€)',
