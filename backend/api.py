@@ -78,6 +78,25 @@ def update_material(
         logger.error(f"Error updating material: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/materials/{material_id}", response_model=dict)
+def delete_material(material_id: int, db: Session = Depends(database.get_db)):
+    logger.info(f"Deleting material with id: {material_id}")
+    db_material = db.query(models.Material).filter(models.Material.id == material_id).first()
+    if db_material is None:
+        logger.warning(f"Material with id {material_id} not found")
+        raise HTTPException(status_code=404, detail="Material not found")
+
+    try:
+        db.delete(db_material)
+        db.commit()
+        logger.info(f"Material {material_id} deleted successfully")
+        return {"message": "Material deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting material: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Printers endpoints
 @app.post("/printers/", response_model=schemas.Printer)
 def create_printer(printer: schemas.PrinterCreate, db: Session = Depends(database.get_db)):
