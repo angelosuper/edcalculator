@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float, Boolean
 from .base import Base
 
 class Material(Base):
@@ -22,38 +21,6 @@ class Material(Base):
     first_layer_speed = Column(Float, default=30.0)  # mm/s
     fan_speed = Column(Integer, default=100)  # %
     flow_rate = Column(Integer, default=100)  # %
-
-    # Relazione con le raccomandazioni
-    recommendations = relationship("PrintRecommendation", back_populates="material")
-
-class ModelCharacteristics(Base):
-    __tablename__ = "model_characteristics"
-
-    id = Column(Integer, primary_key=True, index=True)
-    file_hash = Column(String, unique=True, index=True)  # Hash del file STL per identificazione
-    volume = Column(Float)  # cm³
-    surface_area = Column(Float)  # cm²
-    max_overhang_angle = Column(Float)  # gradi
-    has_supports = Column(Boolean, default=False)
-    complexity_score = Column(Float)  # 0-100
-    recommended_settings = Column(JSON)  # Impostazioni raccomandate basate sull'analisi
-
-class PrintRecommendation(Base):
-    __tablename__ = "print_recommendations"
-
-    id = Column(Integer, primary_key=True, index=True)
-    material_id = Column(Integer, ForeignKey("materials.id"))
-    model_hash = Column(String, index=True)  # Hash del modello STL
-    layer_height = Column(Float)
-    print_speed = Column(Float)
-    temperature = Column(Float)
-    bed_temperature = Column(Float)
-    fan_speed = Column(Integer)
-    success_rating = Column(Float)  # Valutazione del successo della stampa (0-5)
-    feedback = Column(String)  # Feedback dell'utente
-
-    # Relazioni
-    material = relationship("Material", back_populates="recommendations")
 
 class Printer(Base):
     __tablename__ = "printers"
