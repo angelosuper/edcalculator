@@ -43,6 +43,9 @@ def configure_theme():
                         color: #fafafa;
                         border: 1px solid #464855;
                     }
+                    .stButton>button:hover {
+                        border-color: #6c757d;
+                    }
 
                     /* Input di testo */
                     .stTextInput>div>div>input, .stNumberInput>div>div>input {
@@ -55,36 +58,71 @@ def configure_theme():
                     .stSelectbox>div>div, .stMultiSelect>div>div {
                         background-color: #262730;
                         color: #fafafa;
+                        border: 1px solid #464855;
+                    }
+                    .stSelectbox>div>div:hover, .stMultiSelect>div>div:hover {
+                        border-color: #6c757d;
                     }
 
                     /* Slider */
                     .stSlider>div>div {
                         background-color: #262730;
                     }
+                    .stSlider>div>div>div>div {
+                        background-color: #464855;
+                    }
 
                     /* DataFrames/Tabelle */
                     .dataframe {
                         background-color: #1b1e23;
                         color: #fafafa;
+                        border: 1px solid #464855;
                     }
                     .dataframe th {
                         background-color: #262730;
+                        color: #ffffff;
+                        border: 1px solid #464855;
                     }
                     .dataframe td {
                         background-color: #1b1e23;
+                        border: 1px solid #464855;
                     }
 
                     /* Tabs */
                     .stTabs [data-baseweb="tab-list"] {
                         background-color: #262730;
+                        border-bottom: 1px solid #464855;
                     }
                     .stTabs [data-baseweb="tab"] {
                         color: #fafafa;
+                    }
+                    .stTabs [data-baseweb="tab-border"] {
+                        background-color: #0066cc;
+                    }
+
+                    /* File uploader */
+                    [data-testid="stFileUploader"] {
+                        background-color: #262730;
+                        border: 1px dashed #464855;
+                        color: #fafafa;
+                    }
+                    [data-testid="stFileUploader"]:hover {
+                        border-color: #6c757d;
+                    }
+                    [data-testid="stFileUploader"] > div {
+                        background-color: #262730;
                     }
 
                     /* Contenitori e card */
                     [data-testid="stDecoration"], div.stBlock {
                         background-color: #262730;
+                        border: 1px solid #464855;
+                    }
+
+                    /* Info/Warning/Error/Success boxes */
+                    .stAlert {
+                        background-color: #262730;
+                        border: 1px solid #464855;
                     }
 
                     /* Miglioramento leggibilità testo */
@@ -93,6 +131,14 @@ def configure_theme():
                     }
                     h1, h2, h3, h4, h5, h6 {
                         color: #ffffff;
+                    }
+
+                    /* Link */
+                    a {
+                        color: #4d9fff !important;
+                    }
+                    a:hover {
+                        color: #77b5ff !important;
                     }
                 </style>
                 """, unsafe_allow_html=True)
