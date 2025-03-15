@@ -1,0 +1,14 @@
+# Enable rewrite engine
+RewriteEngine On
+
+# If request starts with /api/, proxy to the backend
+RewriteCond %{REQUEST_URI} ^/api/(.*)$
+RewriteRule ^api/(.*) http://localhost:8000/$1 [P,L]
+
+# For all other requests, serve the Streamlit app
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule ^(.*)$ http://localhost:5000/$1 [P,L]
+
+# Handle errors
+ErrorDocument 500 "Server Error - Please try again later"
+ErrorDocument 404 "Page Not Found"

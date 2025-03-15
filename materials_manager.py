@@ -1,11 +1,15 @@
 import streamlit as st
 import requests
 import pandas as pd
+import os
+
+# Ottieni l'URL del backend dall'ambiente o usa un default
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
 
 def fetch_materials():
     """Recupera la lista dei materiali dal backend"""
     try:
-        response = requests.get("http://localhost:8000/materials/")
+        response = requests.get(f"{BACKEND_URL}/materials/")
         if response.status_code == 200:
             return response.json()
         else:
@@ -18,7 +22,7 @@ def fetch_materials():
 def add_material(material_data):
     """Aggiunge un nuovo materiale"""
     try:
-        response = requests.post("http://localhost:8000/materials/", json=material_data)
+        response = requests.post(f"{BACKEND_URL}/materials/", json=material_data)
         if response.status_code == 200:
             st.success("✅ Materiale aggiunto con successo!")
             return True
