@@ -201,119 +201,21 @@ def main():
                     st.write(f"Costo Materiale: €{calculations['material_cost']}")
                     st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-                    # Visualizzazione 3D con Three.js
+                    # Visualizzazione 3D con ViewSTL
                     st.subheader("Anteprima Modello")
                     try:
                         # Converti il file STL in base64
                         file_content = uploaded_file.getvalue()
                         file_base64 = base64.b64encode(file_content).decode()
 
-                        # Crea il visualizzatore
+                        # Crea il visualizzatore con ViewSTL
                         st.components.v1.html(
                             f"""
-                            <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
-                            <script src="https://unpkg.com/three@0.132.2/build/three.min.js"></script>
-                            <script src="https://unpkg.com/three@0.132.2/examples/js/loaders/STLLoader.js"></script>
-                            <script src="https://unpkg.com/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
-                            <script>
-                                window.addEventListener('load', function() {{
-                                    if (typeof THREE === 'undefined') {{
-                                        document.getElementById('stl_viewer').innerHTML = 
-                                            '<div style="color: red; padding: 20px;">Three.js non è stato caricato correttamente</div>';
-                                        return;
-                                    }}
-
-                                    try {{
-                                        // Setup scena
-                                        const container = document.getElementById('stl_viewer');
-                                        const scene = new THREE.Scene();
-                                        scene.background = new THREE.Color(0xf5f5f5);
-
-                                        // Camera
-                                        const camera = new THREE.PerspectiveCamera(
-                                            75, container.clientWidth / container.clientHeight, 0.1, 1000
-                                        );
-                                        camera.position.set(100, 100, 100);
-                                        camera.lookAt(0, 0, 0);
-
-                                        // Renderer
-                                        const renderer = new THREE.WebGLRenderer({{antialias: true}});
-                                        renderer.setSize(container.clientWidth, container.clientHeight);
-                                        container.appendChild(renderer.domElement);
-
-                                        // Controlli orbitali
-                                        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-                                        controls.enableDamping = true;
-                                        controls.dampingFactor = 0.05;
-                                        controls.enableZoom = true;
-
-                                        // Luci
-                                        const ambientLight = new THREE.AmbientLight(0x404040, 1);
-                                        scene.add(ambientLight);
-
-                                        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-                                        directionalLight.position.set(1, 1, 1).normalize();
-                                        scene.add(directionalLight);
-
-                                        // Carica il modello STL
-                                        const stlData = atob('{file_base64}');
-                                        const buffer = new Uint8Array(stlData.length);
-                                        for (let i = 0; i < stlData.length; i++) {{
-                                            buffer[i] = stlData.charCodeAt(i);
-                                        }}
-
-                                        const loader = new THREE.STLLoader();
-                                        const geometry = loader.parse(buffer.buffer);
-                                        const material = new THREE.MeshPhongMaterial({{
-                                            color: 0x1E88E5,
-                                            specular: 0x111111,
-                                            shininess: 100
-                                        }});
-                                        const mesh = new THREE.Mesh(geometry, material);
-
-                                        // Centra e scala il modello
-                                        geometry.computeBoundingBox();
-                                        const center = new THREE.Vector3();
-                                        geometry.boundingBox.getCenter(center);
-                                        mesh.position.sub(center);
-
-                                        const size = new THREE.Vector3();
-                                        geometry.boundingBox.getSize(size);
-                                        const maxDim = Math.max(size.x, size.y, size.z);
-                                        const scale = 50 / maxDim;
-                                        mesh.scale.multiplyScalar(scale);
-
-                                        scene.add(mesh);
-
-                                        // Loop di rendering
-                                        function animate() {{
-                                            requestAnimationFrame(animate);
-                                            controls.update();
-                                            renderer.render(scene, camera);
-                                        }}
-                                        animate();
-
-                                        // Gestione ridimensionamento
-                                        window.addEventListener('resize', function() {{
-                                            const width = container.clientWidth;
-                                            const height = container.clientHeight;
-                                            camera.aspect = width / height;
-                                            camera.updateProjectionMatrix();
-                                            renderer.setSize(width, height);
-                                        }});
-
-                                        console.log('Visualizzatore STL inizializzato con successo');
-                                    }} catch (error) {{
-                                        console.error('Errore:', error);
-                                        document.getElementById('stl_viewer').innerHTML = 
-                                            '<div style="color: red; padding: 20px; text-align: center;">' +
-                                            '<p>Errore nel caricamento del visualizzatore 3D</p>' +
-                                            '<p style="font-size: 0.8em;">Dettaglio: ' + error.message + '</p>' +
-                                            '</div>';
-                                    }}
-                                }});
-                            </script>
-                            """.replace('{file_base64}', file_base64),
+                            <iframe id="vs_iframe" 
+                                src="https://www.viewstl.com/?embedded&color=azure&bgcolor=transparent&model=data:model/stl;base64,{file_base64}"
+                                style="border:0;margin:0;width:100%;height:400px;">
+                            </iframe>
+                            """,
                             height=400
                         )
 
