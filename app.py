@@ -7,6 +7,7 @@ import json
 
 from stl_processor import process_stl, calculate_print_cost
 from materials_manager import materials_manager_page, fetch_materials
+from tutorial import TutorialState, show_tooltip, show_welcome_message, get_tutorial_content
 
 def get_materials_from_api():
     """Recupera i materiali dal backend"""
@@ -197,21 +198,42 @@ def main():
         layout="wide"
     )
 
+    # Inizializza il tutorial
+    tutorial = TutorialState()
+
+    # Mostra il messaggio di benvenuto se necessario
+    show_welcome_message()
+
     # Barra laterale
     with st.sidebar:
         st.title("Navigazione")
         st.markdown("---")
+
+        # Aggiungi controlli tutorial
+        if tutorial.is_enabled():
+            st.sidebar.info("📚 Tutorial attivo")
+            if st.sidebar.button("Disattiva Tutorial"):
+                tutorial.disable_tutorial()
+                st.rerun()
+        else:
+            if st.sidebar.button("Riattiva Tutorial"):
+                st.session_state.tutorial_enabled = True
+                tutorial.reset_tutorial()
+                st.rerun()
+
         page = st.radio(
             "Seleziona una sezione:",
             ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
             format_func=lambda x: x.split(" ", 1)[1]
         )
+
         st.markdown("---")
         st.info("Usa il menu sopra per navigare tra le sezioni dell'applicazione")
 
     # Contenuto principale
     if page == "🧮 Calcolo Costi":
         st.title("Calcolatore Costi Stampa 3D")
+
         # Recupera materiali dal backend
         materials_data = get_materials_from_api()
 
@@ -219,7 +241,17 @@ def main():
             st.warning("Nessun materiale disponibile. Aggiungi materiali nella sezione 'Gestione Materiali'.")
             return
 
-        # Selezione materiale
+        # Selezione materiale con tooltip
+        current_step = tutorial.get_current_step()
+        tutorial_content = get_tutorial_content(current_step)
+
+        if tutorial_content:
+            show_tooltip(
+                f"tutorial_step_{current_step}",
+                tutorial_content["message"],
+                tutorial_content.get("hint", "")
+            )
+
         st.subheader("Selezione Materiale")
         materials_df = pd.DataFrame.from_dict(materials_data, orient='index')
         materials_df.index.name = 'Materiale'
@@ -236,10 +268,21 @@ def main():
             options=list(materials_data.keys())
         )
 
+        if selected_material and current_step == 0:
+            tutorial.next_step()
+            st.rerun()
+
         material_props = materials_data.get(selected_material)
 
         if material_props:
-            # Selezione altezza layer
+            # Layer height selection with tooltip
+            if current_step == 1:
+                show_tooltip(
+                    "layer_height",
+                    tutorial_content["message"],
+                    tutorial_content["hint"]
+                )
+
             layer_height = st.slider(
                 "Altezza layer (mm)",
                 min_value=material_props['min_layer_height'],
@@ -247,6 +290,10 @@ def main():
                 value=0.2,
                 step=0.05
             )
+
+            if layer_height and current_step == 1:
+                tutorial.next_step()
+                st.rerun()
 
             # Velocità di stampa
             velocita_stampa = st.slider(
@@ -259,7 +306,19 @@ def main():
 
             # Caricamento file
             st.subheader("Carica File STL")
+            # File upload with tooltip
+            if current_step == 2:
+                show_tooltip(
+                    "file_upload",
+                    tutorial_content["message"],
+                    tutorial_content["hint"]
+                )
+
             uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
+
+            if uploaded_file and current_step == 2:
+                tutorial.next_step()
+                st.rerun()
 
             if uploaded_file is not None:
                 try:
@@ -299,6 +358,14 @@ def main():
 
                     # Selezione modalità visualizzazione
                     st.subheader("Anteprima Modello")
+                    # 3D visualization with tooltip
+                    if current_step == 3:
+                        show_tooltip(
+                            "visualization",
+                            tutorial_content["message"],
+                            tutorial_content["hint"]
+                        )
+
                     visualization_mode = st.selectbox(
                         "Modalità di visualizzazione",
                         options=['points', 'surface', 'wireframe', 'combination'],
