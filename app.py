@@ -8,177 +8,6 @@ import json
 from stl_processor import process_stl, calculate_print_cost
 from materials_manager import materials_manager_page, fetch_materials
 
-# Configurazione tema
-def configure_theme():
-    # Inizializza lo stato del tema se non esiste
-    if 'dark_mode' not in st.session_state:
-        st.session_state.dark_mode = False
-
-    # Sidebar per le impostazioni del tema
-    with st.sidebar:
-        st.title("Navigazione")
-        st.markdown("---")
-
-        # Pulsante tema
-        if st.button(
-            "🌙" if not st.session_state.dark_mode else "☀️",
-            help="Cambia tema chiaro/scuro",
-            key="theme_button"
-        ):
-            st.session_state.dark_mode = not st.session_state.dark_mode
-
-        # Applica il tema
-        if st.session_state.dark_mode:
-            st.markdown("""
-                <style>
-                    :root {
-                        --background-color: #1b1e23;
-                        --secondary-background-color: #262730;
-                        --text-color: #fafafa;
-                        --primary-color: #0066cc;
-                        --hover-color: #2d3035;
-                    }
-                    /* Tema generale */
-                    .stApp {
-                        background-color: #0e1117;
-                        color: #fafafa;
-                    }
-
-                    /* DataFrames/Tabelle */
-                    .dataframe {
-                        background-color: var(--background-color) !important;
-                        color: var(--text-color) !important;
-                        border: 1px solid #464855;
-                    }
-                    .dataframe th {
-                        background-color: var(--secondary-background-color) !important;
-                        color: #ffffff !important;
-                        border: 1px solid #464855 !important;
-                    }
-                    .dataframe td {
-                        background-color: var(--background-color) !important;
-                        border: 1px solid #464855 !important;
-                        color: var(--text-color) !important;
-                    }
-
-                    /* File uploader */
-                    [data-testid="stFileUploader"] {
-                        background-color: var(--background-color) !important;
-                        border: 1px dashed #464855 !important;
-                        color: var(--text-color) !important;
-                    }
-                    [data-testid="stFileUploader"]:hover {
-                        border-color: var(--primary-color) !important;
-                    }
-                    [data-testid="stFileUploader"] > div {
-                        background-color: var(--background-color) !important;
-                    }
-                    [data-testid="stFileUploader"] span {
-                        color: var(--text-color) !important;
-                    }
-                    /* Bottoni */
-                    .stButton>button {
-                        background-color: #262730;
-                        color: #fafafa;
-                        border: 1px solid #464855;
-                    }
-                    .stButton>button:hover {
-                        border-color: #6c757d;
-                    }
-
-                    /* Input di testo */
-                    .stTextInput>div>div>input, .stNumberInput>div>div>input {
-                        background-color: #262730;
-                        color: #fafafa;
-                        border-color: #464855;
-                    }
-
-                    /* Selectbox e multiselect */
-                    .stSelectbox>div>div, .stMultiSelect>div>div {
-                        background-color: #262730;
-                        color: #fafafa;
-                        border: 1px solid #464855;
-                    }
-                    .stSelectbox>div>div:hover, .stMultiSelect>div>div:hover {
-                        border-color: #6c757d;
-                    }
-
-                    /* Slider */
-                    .stSlider>div>div {
-                        background-color: #262730;
-                    }
-                    .stSlider>div>div>div>div {
-                        background-color: #464855;
-                    }
-
-                    /* Tabs */
-                    .stTabs [data-baseweb="tab-list"] {
-                        background-color: #262730;
-                        border-bottom: 1px solid #464855;
-                    }
-                    .stTabs [data-baseweb="tab"] {
-                        color: #fafafa;
-                    }
-                    .stTabs [data-baseweb="tab-border"] {
-                        background-color: #0066cc;
-                    }
-
-
-                    /* Contenitori e card */
-                    [data-testid="stDecoration"], div.stBlock {
-                        background-color: #262730;
-                        border: 1px solid #464855;
-                    }
-
-                    /* Info/Warning/Error/Success boxes */
-                    .stAlert {
-                        background-color: #262730;
-                        border: 1px solid #464855;
-                    }
-
-                    /* Miglioramento leggibilità testo */
-                    p, div, span {
-                        color: #fafafa;
-                    }
-                    h1, h2, h3, h4, h5, h6 {
-                        color: #ffffff;
-                    }
-
-                    /* Link */
-                    a {
-                        color: #4d9fff !important;
-                    }
-                    a:hover {
-                        color: #77b5ff !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-
-        else:
-            st.markdown("""
-                <style>
-                    :root {
-                        --background-color: #ffffff;
-                        --secondary-background-color: #f0f2f6;
-                        --text-color: #262730;
-                        --primary-color: #0066cc;
-                        --hover-color: #f8f9fa;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-
-        st.markdown("---")
-        # Menu di navigazione
-        page = st.radio(
-            "Seleziona una sezione:",
-            ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
-            format_func=lambda x: x.split(" ", 1)[1]
-        )
-        st.markdown("---")
-        st.info("Usa il menu sopra per navigare tra le sezioni dell'applicazione")
-
-        return page
-
 def get_materials_from_api():
     """Recupera i materiali dal backend"""
     materials = fetch_materials()
@@ -199,12 +28,12 @@ def create_3d_visualization(vertices, visualization_mode='points'):
             z=vertices[:, 2],
             mode='markers',
             marker=dict(
-                size=2,                # Dimensione punti leggermente aumentata
-                color='blue',          # Colore blu standard
-                opacity=0.8,           # Opacità ottimale
+                size=2,                
+                color='blue',          
+                opacity=0.8,           
                 line=dict(
-                    width=0.5,         # Bordo sottile per definizione
-                    color='darkblue'   # Bordo più scuro per profondità
+                    width=0.5,         
+                    color='darkblue'   
                 )
             )
         )
@@ -266,11 +95,11 @@ def create_3d_visualization(vertices, visualization_mode='points'):
     fig = go.Figure(data=[trace])
     fig.update_layout(
         scene=dict(
-            aspectmode='manual',  # Imposta manualmente le proporzioni
+            aspectmode='manual',  
             aspectratio=dict(
-                x=195.84/122.4,  # Proporzione basata sulla lunghezza
-                y=1,             # Larghezza come riferimento
-                z=200/122.4      # Proporzione basata sull'altezza
+                x=195.84/122.4,  
+                y=1,             
+                z=200/122.4      
             ),
             camera=dict(
                 up=dict(x=0, y=1, z=0),
@@ -284,7 +113,7 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                 zeroline=True,
                 zerolinewidth=2,
                 zerolinecolor='gray',
-                range=[-97.92, 97.92]  # ±195.84/2 mm
+                range=[-97.92, 97.92]  
             ),
             yaxis=dict(
                 showgrid=True,
@@ -293,7 +122,7 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                 zeroline=True,
                 zerolinewidth=2,
                 zerolinecolor='gray',
-                range=[-61.2, 61.2]    # ±122.4/2 mm
+                range=[-61.2, 61.2]    
             ),
             zaxis=dict(
                 showgrid=True,
@@ -302,13 +131,12 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                 zeroline=True,
                 zerolinewidth=2,
                 zerolinecolor='gray',
-                range=[0, 200]         # 0-200 mm altezza
+                range=[0, 200]         
             ),
-            dragmode='orbit'  # Abilita la rotazione tramite drag
+            dragmode='orbit'  
         ),
         margin=dict(l=0, r=0, t=0, b=0),
         showlegend=False,
-        # Aggiungi i controlli di navigazione 3D
         updatemenus=[
             dict(
                 type='buttons',
@@ -369,8 +197,17 @@ def main():
         layout="wide"
     )
 
-    # Configura e ottieni la pagina selezionata
-    page = configure_theme()
+    # Barra laterale
+    with st.sidebar:
+        st.title("Navigazione")
+        st.markdown("---")
+        page = st.radio(
+            "Seleziona una sezione:",
+            ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
+            format_func=lambda x: x.split(" ", 1)[1]
+        )
+        st.markdown("---")
+        st.info("Usa il menu sopra per navigare tra le sezioni dell'applicazione")
 
     # Contenuto principale
     if page == "🧮 Calcolo Costi":
@@ -386,7 +223,6 @@ def main():
         st.subheader("Selezione Materiale")
         materials_df = pd.DataFrame.from_dict(materials_data, orient='index')
         materials_df.index.name = 'Materiale'
-
 
         st.dataframe(materials_df.rename(columns={
             'density': 'Densità (g/cm³)',
