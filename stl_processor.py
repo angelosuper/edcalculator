@@ -98,13 +98,9 @@ def calculate_print_cost(volume: float, material_properties: dict, layer_height:
     # Stima tempo di stampa
     print_time = estimate_print_time(volume, layer_height, velocita_stampa)
 
-    # Calcola costo macchina (30€/ora, include):
-    # - Ammortamento stampante
-    # - Consumo elettrico
-    # - Manutenzione
-    # - Margine operativo
-    costo_orario = 30
-    machine_cost = print_time * costo_orario
+    # Usa il costo orario specifico del materiale
+    hourly_cost = material_properties.get('hourly_cost', 30)  # EUR/ora
+    machine_cost = print_time * hourly_cost
 
     return {
         'volume_cm3': round(volume, 2),
