@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from stl.mesh import Mesh  # Modifica dell'import per numpy-stl
+from stl import mesh  # Modifica dell'import per numpy-stl
 import io
 import tempfile
 import os
@@ -25,7 +25,7 @@ def process_stl(file_content: bytes) -> tuple[float, NDArray]:
 
         try:
             # Load STL file from the temporary path
-            stl_mesh = Mesh.from_file(tmp_file_path)
+            stl_mesh = mesh.Mesh.from_file(tmp_file_path)
 
             # Calculate volume (converts from mm³ to cm³)
             volume = abs(stl_mesh.get_mass_properties()[0]) / 1000
