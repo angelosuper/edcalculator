@@ -21,13 +21,21 @@ def create_3d_visualization(vertices, visualization_mode='points'):
             )
         )
     elif visualization_mode == 'surface':
-        # Creare una mesh di superficie
+        # Creare una mesh di superficie con illuminazione e colore ottimizzati
         trace = go.Mesh3d(
             x=vertices[:, 0],
             y=vertices[:, 1],
             z=vertices[:, 2],
-            color='blue',
-            opacity=0.8
+            color='rgb(0, 100, 255)',  # Blu più chiaro
+            opacity=1.0,               # Completamente opaco
+            lighting=dict(
+                ambient=0.3,           # Luce ambientale
+                diffuse=1.0,           # Diffusione della luce
+                fresnel=0.8,           # Effetto fresnel per bordi più luminosi
+                specular=1.0,          # Riflessione speculare
+                roughness=0.4          # Rugosità della superficie
+            ),
+            flatshading=True          # Ombreggiatura piatta per un aspetto più solido
         )
     elif visualization_mode == 'wireframe':
         trace = go.Scatter3d(
@@ -45,8 +53,16 @@ def create_3d_visualization(vertices, visualization_mode='points'):
             x=vertices[:, 0],
             y=vertices[:, 1],
             z=vertices[:, 2],
-            color='blue',
-            opacity=0.5
+            color='rgb(0, 100, 255)',
+            opacity=0.7,
+            lighting=dict(
+                ambient=0.3,
+                diffuse=1.0,
+                fresnel=0.8,
+                specular=1.0,
+                roughness=0.4
+            ),
+            flatshading=True
         )
         trace2 = go.Scatter3d(
             x=vertices[:, 0],
@@ -63,9 +79,18 @@ def create_3d_visualization(vertices, visualization_mode='points'):
     fig = go.Figure(data=[trace])
     fig.update_layout(
         scene=dict(
-            aspectmode='data'
+            aspectmode='data',
+            camera=dict(
+                up=dict(x=0, y=1, z=0),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=1.5, y=1.5, z=1.5)
+            ),
+            xaxis=dict(showgrid=False),
+            yaxis=dict(showgrid=False),
+            zaxis=dict(showgrid=False)
         ),
-        margin=dict(l=0, r=0, t=0, b=0)
+        margin=dict(l=0, r=0, t=0, b=0),
+        showlegend=False
     )
     return fig
 
