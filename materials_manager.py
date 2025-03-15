@@ -2,36 +2,43 @@ import streamlit as st
 import requests
 import pandas as pd
 import os
+import time
 
 # Ottieni l'URL del backend dall'ambiente o usa un default
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
 
 def fetch_materials():
     """Recupera la lista dei materiali dal backend"""
-    try:
-        response = requests.get(f"{BACKEND_URL}/materials/")
-        if response.status_code == 200:
-            return response.json()
-        else:
-            st.error(f"Errore nel recupero dei materiali: {response.status_code}")
+    with st.spinner('🔄 Caricamento materiali in corso...'):
+        try:
+            response = requests.get(f"{BACKEND_URL}/materials/")
+            if response.status_code == 200:
+                # Simula un breve ritardo per mostrare l'animazione
+                time.sleep(0.5)
+                return response.json()
+            else:
+                st.error(f"Errore nel recupero dei materiali: {response.status_code}")
+                return []
+        except Exception as e:
+            st.error(f"Errore di connessione al backend: {str(e)}")
             return []
-    except Exception as e:
-        st.error(f"Errore di connessione al backend: {str(e)}")
-        return []
 
 def add_material(material_data):
     """Aggiunge un nuovo materiale"""
-    try:
-        response = requests.post(f"{BACKEND_URL}/materials/", json=material_data)
-        if response.status_code == 200:
-            st.success("✅ Materiale aggiunto con successo!")
-            return True
-        else:
-            st.error(f"❌ Errore nell'aggiunta del materiale: {response.status_code}")
+    with st.spinner('⏳ Aggiunta del nuovo materiale in corso...'):
+        try:
+            response = requests.post(f"{BACKEND_URL}/materials/", json=material_data)
+            if response.status_code == 200:
+                # Mostra una animazione di successo
+                with st.balloons():
+                    st.success("✅ Materiale aggiunto con successo!")
+                return True
+            else:
+                st.error(f"❌ Errore nell'aggiunta del materiale: {response.status_code}")
+                return False
+        except Exception as e:
+            st.error(f"❌ Errore di connessione al backend: {str(e)}")
             return False
-    except Exception as e:
-        st.error(f"❌ Errore di connessione al backend: {str(e)}")
-        return False
 
 def materials_manager_page():
     st.title("⚙️ Gestione Materiali")
@@ -40,34 +47,42 @@ def materials_manager_page():
     Usa le schede sottostanti per gestire i tuoi materiali.
     """)
 
+    # Contenitore per animazioni di transizione
+    main_container = st.container()
+
     # Tab per visualizzare/aggiungere materiali
     tab1, tab2 = st.tabs(["📋 Lista Materiali", "➕ Aggiungi Materiale"])
 
     with tab1:
         st.subheader("📋 Materiali Disponibili")
-        materials = fetch_materials()
-        if materials:
-            df = pd.DataFrame(materials)
-            st.dataframe(
-                df.rename(columns={
-                    'name': 'Nome',
-                    'density': 'Densità (g/cm³)',
-                    'cost_per_kg': 'Costo per kg (€)',
-                    'min_layer_height': 'Altezza min. layer (mm)',
-                    'max_layer_height': 'Altezza max. layer (mm)',
-                    'default_temperature': 'Temperatura predefinita (°C)',
-                    'default_bed_temperature': 'Temperatura piano (°C)',
-                    'retraction_enabled': 'Retrazione attiva',
-                    'retraction_distance': 'Distanza retrazione (mm)',
-                    'retraction_speed': 'Velocità retrazione (mm/s)',
-                    'print_speed': 'Velocità stampa (mm/s)',
-                    'first_layer_speed': 'Velocità primo layer (mm/s)',
-                    'fan_speed': 'Velocità ventola (%)',
-                    'flow_rate': 'Flusso (%)'
-                }),
-                use_container_width=True
-            )
-            st.info("ℹ️ Scorri orizzontalmente per vedere tutti i parametri")
+
+        # Animazione di caricamento e transizione
+        with st.empty():
+            materials = fetch_materials()
+            if materials:
+                # Contenitore per la tabella con effetto fade-in
+                with main_container:
+                    df = pd.DataFrame(materials)
+                    st.dataframe(
+                        df.rename(columns={
+                            'name': 'Nome',
+                            'density': 'Densità (g/cm³)',
+                            'cost_per_kg': 'Costo per kg (€)',
+                            'min_layer_height': 'Altezza min. layer (mm)',
+                            'max_layer_height': 'Altezza max. layer (mm)',
+                            'default_temperature': 'Temperatura predefinita (°C)',
+                            'default_bed_temperature': 'Temperatura piano (°C)',
+                            'retraction_enabled': 'Retrazione attiva',
+                            'retraction_distance': 'Distanza retrazione (mm)',
+                            'retraction_speed': 'Velocità retrazione (mm/s)',
+                            'print_speed': 'Velocità stampa (mm/s)',
+                            'first_layer_speed': 'Velocità primo layer (mm/s)',
+                            'fan_speed': 'Velocità ventola (%)',
+                            'flow_rate': 'Flusso (%)'
+                        }),
+                        use_container_width=True
+                    )
+                    st.info("ℹ️ Scorri orizzontalmente per vedere tutti i parametri")
 
     with tab2:
         st.subheader("➕ Aggiungi Nuovo Materiale")
@@ -120,4 +135,5 @@ def materials_manager_page():
                     "fan_speed": fan_speed,
                     "flow_rate": flow_rate
                 }
-                add_material(material_data)
+                if add_material(material_data):
+                    st.experimental_rerun()
