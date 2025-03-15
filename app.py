@@ -201,28 +201,89 @@ def main():
                     st.write(f"Costo Materiale: €{calculations['material_cost']}")
                     st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-                    # Visualizzazione 3D con ViewSTL
+                    # Visualizzazione 3D con Three.js
                     st.subheader("Anteprima Modello")
                     try:
                         # Converti il file STL in base64
                         file_content = uploaded_file.getvalue()
                         file_base64 = base64.b64encode(file_content).decode()
 
-                        # URL encode the base64 string
-                        encoded_stl = file_base64.replace('+', '-').replace('/', '_').replace('=', '')
-
-                        # Crea il visualizzatore con ViewSTL
+                        # Crea il visualizzatore Three.js
                         viewer_html = f"""
-                        <iframe id="vs_iframe" 
-                            src="https://www.viewstl.com/?embedded&color=azure&bgcolor=transparent&model=data:model/stl;base64,{encoded_stl}" 
-                            style="border:1px solid #ddd;margin:0;width:100%;height:400px;">
-                        </iframe>
-                        """
-                        st.components.v1.html(viewer_html, height=400)
+                        <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
+                        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js"></script>
+                        <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js"></script>
+                        <script>
+                            // Verifica che Three.js sia caricato
+                            if (typeof THREE === 'undefined') {{
+                                document.getElementById('stl_viewer').innerHTML = 
+                                    '<div style="color: red; padding: 20px;">Three.js non è stato caricato</div>';
+                                throw new Error('Three.js non è stato caricato');
+                            }}
 
-                        # Log per debug
-                        logger.info(f"Lunghezza base64: {len(file_base64)}")
-                        logger.info(f"URL STL: data:model/stl;base64,{encoded_stl[:100]}...")
+                            // Setup base
+                            const container = document.getElementById('stl_viewer');
+                            const scene = new THREE.Scene();
+                            scene.background = new THREE.Color(0xf5f5f5);
+
+                            const camera = new THREE.PerspectiveCamera(
+                                75, container.clientWidth / container.clientHeight, 0.1, 1000
+                            );
+                            camera.position.z = 100;
+
+                            const renderer = new THREE.WebGLRenderer({{antialias: true}});
+                            renderer.setSize(container.clientWidth, container.clientHeight);
+                            container.appendChild(renderer.domElement);
+
+                            // Luci
+                            const ambientLight = new THREE.AmbientLight(0x404040);
+                            scene.add(ambientLight);
+
+                            const directionalLight = new THREE.DirectionalLight(0xffffff);
+                            directionalLight.position.set(0, 0, 1);
+                            scene.add(directionalLight);
+
+                            // Carica il modello STL
+                            const loader = new THREE.STLLoader();
+                            const modelData = atob('{file_base64}');
+                            const buffer = new Uint8Array(modelData.length);
+                            for (let i = 0; i < modelData.length; i++) {{
+                                buffer[i] = modelData.charCodeAt(i);
+                            }}
+
+                            try {{
+                                const geometry = loader.parse(buffer.buffer);
+                                const material = new THREE.MeshPhongMaterial({{
+                                    color: 0x1E88E5,
+                                    shininess: 30
+                                }});
+                                const mesh = new THREE.Mesh(geometry, material);
+
+                                // Auto-centraggio e scala
+                                geometry.computeBoundingBox();
+                                const center = new THREE.Vector3();
+                                geometry.boundingBox.getCenter(center);
+                                mesh.position.sub(center);
+
+                                scene.add(mesh);
+
+                                // Animazione base
+                                function animate() {{
+                                    requestAnimationFrame(animate);
+                                    mesh.rotation.y += 0.01;
+                                    renderer.render(scene, camera);
+                                }}
+                                animate();
+
+                                console.log('Modello STL caricato con successo');
+                            }} catch (error) {{
+                                console.error('Errore nel parsing STL:', error);
+                                container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello</div>';
+                            }}
+                        </script>
+                        """.replace('{file_base64}', file_base64)
+
+                        st.components.v1.html(viewer_html, height=400)
 
                     except Exception as e:
                         st.error(f"Errore nel visualizzatore 3D: {str(e)}")
