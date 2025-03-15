@@ -56,28 +56,64 @@ def init_db():
                         density=1.24,
                         cost_per_kg=20.0,
                         min_layer_height=0.1,
-                        max_layer_height=0.3
+                        max_layer_height=0.3,
+                        default_temperature=200.0,
+                        default_bed_temperature=60.0,
+                        retraction_enabled=True,
+                        retraction_distance=6.0,
+                        retraction_speed=25.0,
+                        print_speed=60.0,
+                        first_layer_speed=30.0,
+                        fan_speed=100,
+                        flow_rate=100
                     ),
                     models.Material(
                         name="PETG",
                         density=1.27,
                         cost_per_kg=25.0,
                         min_layer_height=0.1,
-                        max_layer_height=0.3
+                        max_layer_height=0.3,
+                        default_temperature=240.0,
+                        default_bed_temperature=80.0,
+                        retraction_enabled=True,
+                        retraction_distance=7.0,
+                        retraction_speed=30.0,
+                        print_speed=50.0,
+                        first_layer_speed=25.0,
+                        fan_speed=50,
+                        flow_rate=100
                     ),
                     models.Material(
                         name="ABS",
                         density=1.04,
                         cost_per_kg=22.0,
                         min_layer_height=0.1,
-                        max_layer_height=0.3
+                        max_layer_height=0.3,
+                        default_temperature=230.0,
+                        default_bed_temperature=100.0,
+                        retraction_enabled=True,
+                        retraction_distance=5.0,
+                        retraction_speed=35.0,
+                        print_speed=55.0,
+                        first_layer_speed=25.0,
+                        fan_speed=0,
+                        flow_rate=100
                     ),
                     models.Material(
                         name="TPU",
                         density=1.21,
                         cost_per_kg=35.0,
                         min_layer_height=0.15,
-                        max_layer_height=0.3
+                        max_layer_height=0.3,
+                        default_temperature=220.0,
+                        default_bed_temperature=60.0,
+                        retraction_enabled=False,
+                        retraction_distance=4.0,
+                        retraction_speed=20.0,
+                        print_speed=25.0,
+                        first_layer_speed=15.0,
+                        fan_speed=50,
+                        flow_rate=110
                     )
                 ]
                 db.bulk_save_objects(default_materials)
