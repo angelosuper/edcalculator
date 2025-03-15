@@ -59,6 +59,15 @@ def main():
             step=0.05
         )
 
+        # Velocità di stampa
+        velocita_stampa = st.slider(
+            "Velocità di stampa (mm/s)",
+            min_value=30,
+            max_value=100,
+            value=60,
+            step=5
+        )
+
         # Caricamento file
         st.subheader("Carica File STL")
         uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
@@ -70,7 +79,7 @@ def main():
                 volume, vertices = process_stl(file_content)
 
                 # Calcola costi
-                calculations = calculate_print_cost(volume, material_props, layer_height)
+                calculations = calculate_print_cost(volume, material_props, layer_height, velocita_stampa)
 
                 # Mostra risultati
                 st.subheader("Risultati")
@@ -85,8 +94,9 @@ def main():
 
                 # Dettaglio costi
                 st.subheader("Dettaglio Costi")
+                st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa']} ore")
                 st.write(f"Costo Materiale: €{calculations['material_cost']}")
-                st.write(f"Costo Macchina: €{calculations['machine_cost']}")
+                st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
                 # Visualizzazione 3D
                 st.subheader("Anteprima Modello")

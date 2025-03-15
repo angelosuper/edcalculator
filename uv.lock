@@ -546,6 +546,7 @@ dependencies = [
     { name = "numpy-stl" },
     { name = "pandas" },
     { name = "plotly" },
+    { name = "stl" },
     { name = "streamlit" },
 ]
 
@@ -555,6 +556,7 @@ requires-dist = [
     { name = "numpy-stl", specifier = ">=3.2.0" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "plotly", specifier = ">=6.0.0" },
+    { name = "stl", specifier = ">=0.0.3" },
     { name = "streamlit", specifier = ">=1.43.2" },
 ]
 
@@ -650,6 +652,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/44/cd/a040c4b3119bbe532
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/be/d09147ad1ec7934636ad912901c5fd7667e1c858e19d355237db0d0cd5e4/smmap-5.0.2-py3-none-any.whl", hash = "sha256:b30115f0def7d7531d22a0fb6502488d879e75b260a9db4d0819cfb25403af5e", size = 24303 },
 ]
+
+[[package]]
+name = "stl"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/aa/91/4bdb12160348109179158d34e6eda6279166302ec0224d6edc8324f344df/stl-0.0.3.tar.gz", hash = "sha256:03a6b58ad52ecf16823b1cf1acf6ef382aa5c0fc1152379f464e284a4f81304b", size = 4230 }
 
 [[package]]
 name = "streamlit"

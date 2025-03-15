@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from stl import mesh
+from stl.mesh import Mesh  # Modifica dell'import per numpy-stl
 import io
 import tempfile
 import os
@@ -25,7 +25,7 @@ def process_stl(file_content: bytes) -> tuple[float, NDArray]:
 
         try:
             # Load STL file from the temporary path
-            stl_mesh = mesh.Mesh.from_file(tmp_file_path)
+            stl_mesh = Mesh.from_file(tmp_file_path)
 
             # Calculate volume (converts from mm³ to cm³)
             volume = abs(stl_mesh.get_mass_properties()[0]) / 1000
@@ -40,36 +40,70 @@ def process_stl(file_content: bytes) -> tuple[float, NDArray]:
                 os.unlink(tmp_file_path)
 
     except Exception as e:
-        raise ValueError(f"Error processing STL file: {str(e)}")
+        raise ValueError(f"Errore nel processare il file STL: {str(e)}")
 
-def calculate_print_cost(volume: float, material_properties: dict, layer_height: float) -> dict:
+def estimate_print_time(volume: float, layer_height: float, velocita_stampa: float = 60) -> float:
     """
-    Calculate printing costs based on volume and material properties
+    Stima il tempo di stampa in ore
 
     Args:
         volume: Volume in cm³
-        material_properties: Dictionary containing material properties
-        layer_height: Layer height in mm
+        layer_height: Altezza layer in mm
+        velocita_stampa: Velocità media di stampa in mm/s
 
     Returns:
-        dict: Dictionary containing cost calculations
+        float: Tempo stimato in ore
     """
-    # Calculate material weight in kg
+    # Stima la lunghezza del filamento (approssimativa)
+    diametro_filamento = 1.75  # mm
+    area_filamento = np.pi * (diametro_filamento/2)**2
+    lunghezza_filamento = (volume * 1000) / area_filamento  # mm
+
+    # Calcola il numero approssimativo di layer
+    altezza_media = np.cbrt(volume * 1000)  # mm
+    numero_layer = altezza_media / layer_height
+
+    # Tempo totale considerando movimenti non di stampa
+    tempo_stampa = lunghezza_filamento / velocita_stampa  # secondi
+    tempo_movimento = numero_layer * 2  # 2 secondi per layer per movimenti
+
+    return (tempo_stampa + tempo_movimento) / 3600  # converti in ore
+
+def calculate_print_cost(volume: float, material_properties: dict, layer_height: float, velocita_stampa: float = 60) -> dict:
+    """
+    Calcola i costi di stampa basati su volume e proprietà del materiale
+
+    Args:
+        volume: Volume in cm³
+        material_properties: Dictionary con le proprietà del materiale
+        layer_height: Altezza layer in mm
+        velocita_stampa: Velocità media di stampa in mm/s
+
+    Returns:
+        dict: Dizionario con i calcoli dei costi
+    """
+    # Calcola peso in kg
     weight = volume * material_properties['density'] / 1000
 
-    # Calculate material cost
+    # Calcola costo materiale
     material_cost = weight * material_properties['cost_per_kg']
 
-    # Calculate printing time factor (simplified)
-    time_factor = 1 + (0.3 - layer_height) * 2  # Higher time factor for smaller layer heights
+    # Stima tempo di stampa
+    print_time = estimate_print_time(volume, layer_height, velocita_stampa)
 
-    # Calculate machine time cost (assumed 30€/hour base rate)
-    machine_time_cost = (volume * time_factor * 0.5)  # Simplified calculation
+    # Calcola costo macchina (30€/ora, include):
+    # - Ammortamento stampante
+    # - Consumo elettrico
+    # - Manutenzione
+    # - Margine operativo
+    costo_orario = 30
+    machine_cost = print_time * costo_orario
 
     return {
         'volume_cm3': round(volume, 2),
         'weight_kg': round(weight, 3),
         'material_cost': round(material_cost, 2),
-        'machine_cost': round(machine_time_cost, 2),
-        'total_cost': round(material_cost + machine_time_cost, 2)
+        'tempo_stampa': round(print_time, 2),
+        'machine_cost': round(machine_cost, 2),
+        'total_cost': round(material_cost + machine_cost, 2)
     }
