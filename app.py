@@ -15,27 +15,30 @@ def create_3d_visualization(vertices, visualization_mode='points'):
             z=vertices[:, 2],
             mode='markers',
             marker=dict(
-                size=1,
-                color='blue',
-                opacity=0.8
+                size=2,                # Dimensione punti leggermente aumentata
+                color='blue',          # Colore blu standard
+                opacity=0.8,           # Opacità ottimale
+                line=dict(
+                    width=0.5,         # Bordo sottile per definizione
+                    color='darkblue'   # Bordo più scuro per profondità
+                )
             )
         )
     elif visualization_mode == 'surface':
-        # Creare una mesh di superficie con illuminazione e colore ottimizzati
         trace = go.Mesh3d(
             x=vertices[:, 0],
             y=vertices[:, 1],
             z=vertices[:, 2],
-            color='rgb(0, 100, 255)',  # Blu più chiaro
-            opacity=1.0,               # Completamente opaco
+            color='rgb(0, 100, 255)',
+            opacity=1.0,
             lighting=dict(
-                ambient=0.3,           # Luce ambientale
-                diffuse=1.0,           # Diffusione della luce
-                fresnel=0.8,           # Effetto fresnel per bordi più luminosi
-                specular=1.0,          # Riflessione speculare
-                roughness=0.4          # Rugosità della superficie
+                ambient=0.3,
+                diffuse=1.0,
+                fresnel=0.8,
+                specular=1.0,
+                roughness=0.4
             ),
-            flatshading=True          # Ombreggiatura piatta per un aspetto più solido
+            flatshading=True
         )
     elif visualization_mode == 'wireframe':
         trace = go.Scatter3d(
