@@ -140,7 +140,7 @@ def main():
 
         if material_props:
             # Layout a due colonne per i controlli
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
 
             with col1:
                 layer_height = st.slider(
@@ -160,6 +160,15 @@ def main():
                     step=5
                 )
 
+            with col3:
+                num_copies = st.number_input(
+                    "Numero di copie",
+                    min_value=1,
+                    value=1,
+                    step=1,
+                    help="Inserisci il numero di copie da stampare"
+                )
+
             # Caricamento file
             st.subheader("Carica File STL")
             uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
@@ -174,32 +183,36 @@ def main():
                     # Calcola costi
                     calculations = calculate_print_cost(volume, material_props, layer_height, velocita_stampa)
 
+                    # Aggiorna i costi per il numero di copie
+                    for key in ['volume_cm3', 'weight_kg', 'material_cost', 'machine_cost', 'total_cost']:
+                        calculations[key] *= num_copies
+
                     # Mostra risultati
                     st.subheader("Risultati")
                     col1, col2, col3 = st.columns(3)
 
                     with col1:
-                        st.metric("Volume", f"{calculations['volume_cm3']} cm³")
+                        st.metric("Volume Totale", f"{calculations['volume_cm3']:.2f} cm³")
                     with col2:
-                        st.metric("Peso", f"{calculations['weight_kg']} kg")
+                        st.metric("Peso Totale", f"{calculations['weight_kg']:.3f} kg")
                     with col3:
-                        st.metric("Costo Totale", f"€{calculations['total_cost']}")
+                        st.metric("Costo Totale", f"€{calculations['total_cost']:.2f}")
 
                     # Mostra dimensioni
                     st.subheader("Dimensioni Oggetto")
                     dim_col1, dim_col2, dim_col3 = st.columns(3)
                     with dim_col1:
-                        st.metric("Larghezza", f"{dimensions['width']} mm")
+                        st.metric("Larghezza", f"{dimensions['width']:.1f} mm")
                     with dim_col2:
-                        st.metric("Profondità", f"{dimensions['depth']} mm")
+                        st.metric("Profondità", f"{dimensions['depth']:.1f} mm")
                     with dim_col3:
-                        st.metric("Altezza", f"{dimensions['height']} mm")
+                        st.metric("Altezza", f"{dimensions['height']:.1f} mm")
 
                     # Dettaglio costi
                     st.subheader("Dettaglio Costi")
-                    st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa']} ore")
-                    st.write(f"Costo Materiale: €{calculations['material_cost']}")
-                    st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
+                    st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa'] * num_copies:.1f} ore")
+                    st.write(f"Costo Materiale: €{calculations['material_cost']:.2f}")
+                    st.write(f"Costo Macchina: €{calculations['machine_cost']:.2f} (€30/ora)")
 
                     # Visualizzazione 3D con Three.js
                     st.subheader("Anteprima Modello")
@@ -208,11 +221,12 @@ def main():
                         file_content = uploaded_file.getvalue()
                         file_base64 = base64.b64encode(file_content).decode()
 
-                        # Crea il visualizzatore Three.js
+                        # Crea il visualizzatore con Three.js
                         viewer_html = f"""
                         <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
                         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js"></script>
                         <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js"></script>
+                        <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/controls/OrbitControls.js"></script>
                         <script>
                             // Verifica che Three.js sia caricato
                             if (typeof THREE === 'undefined') {{
@@ -229,18 +243,28 @@ def main():
                             const camera = new THREE.PerspectiveCamera(
                                 75, container.clientWidth / container.clientHeight, 0.1, 1000
                             );
-                            camera.position.z = 100;
+                            camera.position.set(100, 100, 100);
+                            camera.lookAt(0, 0, 0);
 
                             const renderer = new THREE.WebGLRenderer({{antialias: true}});
                             renderer.setSize(container.clientWidth, container.clientHeight);
                             container.appendChild(renderer.domElement);
+
+                            // Aggiungi controlli orbitali
+                            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                            controls.enableDamping = true;
+                            controls.dampingFactor = 0.05;
+                            controls.screenSpacePanning = true;
+                            controls.minDistance = 50;
+                            controls.maxDistance = 300;
+                            controls.maxPolarAngle = Math.PI;
 
                             // Luci
                             const ambientLight = new THREE.AmbientLight(0x404040);
                             scene.add(ambientLight);
 
                             const directionalLight = new THREE.DirectionalLight(0xffffff);
-                            directionalLight.position.set(0, 0, 1);
+                            directionalLight.position.set(1, 1, 1).normalize();
                             scene.add(directionalLight);
 
                             // Carica il modello STL
@@ -265,15 +289,31 @@ def main():
                                 geometry.boundingBox.getCenter(center);
                                 mesh.position.sub(center);
 
+                                // Calcola scala appropriata
+                                const size = new THREE.Vector3();
+                                geometry.boundingBox.getSize(size);
+                                const maxDim = Math.max(size.x, size.y, size.z);
+                                const scale = 100 / maxDim;
+                                mesh.scale.multiplyScalar(scale);
+
                                 scene.add(mesh);
 
-                                // Animazione base
+                                // Loop di rendering
                                 function animate() {{
                                     requestAnimationFrame(animate);
-                                    mesh.rotation.y += 0.01;
+                                    controls.update();
                                     renderer.render(scene, camera);
                                 }}
                                 animate();
+
+                                // Gestione ridimensionamento
+                                window.addEventListener('resize', function() {{
+                                    const width = container.clientWidth;
+                                    const height = container.clientHeight;
+                                    camera.aspect = width / height;
+                                    camera.updateProjectionMatrix();
+                                    renderer.setSize(width, height);
+                                }});
 
                                 console.log('Modello STL caricato con successo');
                             }} catch (error) {{
