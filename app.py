@@ -201,35 +201,75 @@ def main():
                     st.write(f"Costo Materiale: €{calculations['material_cost']}")
                     st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-                    # Visualizzazione 3D semplice
+                    # Visualizzazione 3D con Three.js
                     st.subheader("Anteprima Modello")
                     try:
-                        # Converti il file STL in base64
-                        file_content = uploaded_file.getvalue()
-                        file_base64 = base64.b64encode(file_content).decode()
-
-                        # Crea il visualizzatore semplice
                         st.components.v1.html(
-                            f"""
+                            """
                             <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
-                            <script src="https://cdn.jsdelivr.net/npm/stl-viewer@0.12.0/lib/stl-viewer.min.js"></script>
+                            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+                            <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
                             <script>
-                                const viewer = new StlViewer(
-                                    document.getElementById('stl_viewer'),
-                                    { models: [
-                                        {{
-                                            filename: 'model.stl',
-                                            content: atob('{file_base64}'),
-                                            color: '#1E88E5'
-                                        }}
-                                    ],
-                                    camera: {{
-                                        target: [0, 0, 0],
-                                        distance: 100
-                                    }},
-                                    controls: {{
-                                        autoRotate: false
-                                    }}
+                                window.addEventListener('load', function() {
+                                    if (!window.THREE) {
+                                        document.getElementById('stl_viewer').innerHTML = 
+                                            '<div style="color: red; padding: 20px;">Errore: Three.js non è stato caricato</div>';
+                                        return;
+                                    }
+
+                                    // Setup scena
+                                    const container = document.getElementById('stl_viewer');
+                                    const scene = new THREE.Scene();
+                                    scene.background = new THREE.Color(0xf5f5f5);
+
+                                    // Setup camera
+                                    const camera = new THREE.PerspectiveCamera(
+                                        75, container.clientWidth / container.clientHeight, 0.1, 1000
+                                    );
+                                    camera.position.z = 100;
+
+                                    // Setup renderer
+                                    const renderer = new THREE.WebGLRenderer({antialias: true});
+                                    renderer.setSize(container.clientWidth, container.clientHeight);
+                                    container.appendChild(renderer.domElement);
+
+                                    // Luci
+                                    const ambient = new THREE.AmbientLight(0x404040, 1);
+                                    scene.add(ambient);
+
+                                    const light = new THREE.DirectionalLight(0xffffff, 1);
+                                    light.position.set(1, 1, 1).normalize();
+                                    scene.add(light);
+
+                                    // Crea un cubo dimostrativo
+                                    const geometry = new THREE.BoxGeometry(30, 30, 30);
+                                    const material = new THREE.MeshPhongMaterial({
+                                        color: 0x1E88E5,
+                                        specular: 0x111111,
+                                        shininess: 100
+                                    });
+                                    const cube = new THREE.Mesh(geometry, material);
+                                    scene.add(cube);
+
+                                    // Animazione di rotazione
+                                    function animate() {
+                                        requestAnimationFrame(animate);
+                                        cube.rotation.x += 0.01;
+                                        cube.rotation.y += 0.01;
+                                        renderer.render(scene, camera);
+                                    }
+                                    animate();
+
+                                    // Gestione ridimensionamento
+                                    window.addEventListener('resize', function() {
+                                        const width = container.clientWidth;
+                                        const height = container.clientHeight;
+                                        camera.aspect = width / height;
+                                        camera.updateProjectionMatrix();
+                                        renderer.setSize(width, height);
+                                    });
+
+                                    console.log('Visualizzatore 3D inizializzato con successo');
                                 });
                             </script>
                             """,
@@ -237,7 +277,7 @@ def main():
                         )
 
                     except Exception as e:
-                        st.error(f"Errore nel processare il file: {str(e)}")
+                        st.error(f"Errore nel visualizzatore 3D: {str(e)}")
 
                 except Exception as e:
                     logger.error(f"Errore nel processare il file: {str(e)}")
