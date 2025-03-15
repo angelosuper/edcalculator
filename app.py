@@ -191,12 +191,27 @@ def create_3d_visualization(vertices, visualization_mode='points'):
     return fig
 
 def main():
-    st.sidebar.title("Navigazione")
-    page = st.sidebar.radio("Vai a", ["Calcolo Costi", "Gestione Materiali"])
+    # Configura la pagina
+    st.set_page_config(
+        page_title="3D Print Cost Calculator",
+        layout="wide"
+    )
 
-    if page == "Calcolo Costi":
-        st.title("Calcolatore Costi Stampa 3D")
+    # Barra laterale più evidente
+    with st.sidebar:
+        st.title("📌 Navigazione")
+        st.markdown("---")
+        page = st.radio(
+            "Seleziona una sezione:",
+            ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
+            format_func=lambda x: x.split(" ", 1)[1]  # Mostra solo il testo dopo l'emoji
+        )
+        st.markdown("---")
+        st.info("👆 Usa il menu sopra per navigare tra le sezioni dell'applicazione")
 
+    # Contenuto principale
+    if page == "🧮 Calcolo Costi":
+        st.title("🧮 Calcolatore Costi Stampa 3D")
         # Recupera materiali dal backend
         materials_data = get_materials_from_api()
 
@@ -301,7 +316,7 @@ def main():
                 except Exception as e:
                     st.error(f"Errore nel processare il file: {str(e)}")
 
-    elif page == "Gestione Materiali":
+    elif page == "⚙️ Gestione Materiali":
         materials_manager_page()
 
 if __name__ == "__main__":
