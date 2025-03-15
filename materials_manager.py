@@ -133,7 +133,7 @@ def materials_manager_page():
     tab1, tab2 = st.tabs(["📋 Lista Materiali", "➕ Aggiungi Materiale"])
 
     with tab1:
-        st.subheader("📋 Materiali Disponibili")
+        st.subheader("📋 Lista dei Materiali")
 
         # Animazione di caricamento e transizione
         with st.empty():
