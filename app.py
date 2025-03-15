@@ -188,49 +188,9 @@ def main():
 
                     # Mostra risultati per pezzo singolo
                     st.subheader("Risultati per Singolo Pezzo")
-                    col1, col2, col3 = st.columns(3)
 
-                    with col1:
-                        st.metric("Volume", f"{calculations['volume_cm3']:.2f} cm³")
-                    with col2:
-                        st.metric("Peso", f"{calculations['weight_kg']:.3f} kg")
-                    with col3:
-                        st.metric("Costo", f"€{calculations['total_cost']:.2f}")
-
-                    # Mostra dimensioni
-                    st.subheader("Dimensioni Oggetto")
-                    dim_col1, dim_col2, dim_col3 = st.columns(3)
-                    with dim_col1:
-                        st.metric("Larghezza", f"{dimensions['width']:.1f} mm")
-                    with dim_col2:
-                        st.metric("Profondità", f"{dimensions['depth']:.1f} mm")
-                    with dim_col3:
-                        st.metric("Altezza", f"{dimensions['height']:.1f} mm")
-
-                    # Mostra totale per tutte le copie se num_copies > 1
-                    if num_copies > 1:
-                        st.subheader(f"Totale per {num_copies} pezzi")
-                        total_cost = calculations['total_cost'] * num_copies
-                        total_volume = calculations['volume_cm3'] * num_copies
-                        total_weight = calculations['weight_kg'] * num_copies
-                        total_time = calculations['tempo_stampa'] * num_copies
-
-                        tcol1, tcol2, tcol3 = st.columns(3)
-                        with tcol1:
-                            st.metric("Volume Totale", f"{total_volume:.2f} cm³")
-                        with tcol2:
-                            st.metric("Peso Totale", f"{total_weight:.3f} kg")
-                        with tcol3:
-                            st.metric("Costo Totale", f"€{total_cost:.2f}")
-
-                    # Dettaglio costi per pezzo
-                    st.subheader("Dettaglio Costi per Pezzo")
-                    st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa']:.1f} ore")
-                    st.write(f"Costo Materiale: €{calculations['material_cost']:.2f}")
-                    st.write(f"Costo Macchina: €{calculations['machine_cost']:.2f} (€30/ora)")
-
-                    # Visualizzazione 3D con Three.js
-                    st.subheader("Anteprima Modello")
+                    # Visualizzazione 3D con Three.js subito dopo il caricamento del file
+                    st.markdown("##### Anteprima Modello")
                     try:
                         # Converti il file STL in base64
                         file_content = uploaded_file.getvalue()
@@ -238,7 +198,7 @@ def main():
 
                         # Crea il visualizzatore con Three.js
                         viewer_html = f"""
-                        <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
+                        <div id="stl_viewer" style="width:100%; height:350px; border:1px solid #ddd; background:#f5f5f5;"></div>
                         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js"></script>
                         <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js"></script>
                         <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/controls/OrbitControls.js"></script>
@@ -338,11 +298,89 @@ def main():
                         </script>
                         """.replace('{file_base64}', file_base64)
 
-                        st.components.v1.html(viewer_html, height=400)
+                        st.components.v1.html(viewer_html, height=350)
 
                     except Exception as e:
                         st.error(f"Errore nel visualizzatore 3D: {str(e)}")
                         logger.error(f"Errore dettagliato: {str(e)}")
+
+                    # Applica stile CSS per ridurre la dimensione dei caratteri
+                    st.markdown("""
+                    <style>
+                    .metric-container {
+                        font-size: 0.9em;
+                    }
+                    .metric-label {
+                        font-size: 0.8em;
+                        color: #555;
+                    }
+                    .metric-value {
+                        font-size: 1em;
+                        font-weight: bold;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
+
+                    # Metriche con dimensioni ridotte
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Volume", f"{calculations['volume_cm3']:.2f} cm³")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with col2:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Peso", f"{calculations['weight_kg']:.3f} kg")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with col3:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Costo", f"€{calculations['total_cost']:.2f}")
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                    # Mostra dimensioni con dimensioni ridotte
+                    st.markdown("##### Dimensioni Oggetto")
+                    dim_col1, dim_col2, dim_col3 = st.columns(3)
+                    with dim_col1:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Larghezza", f"{dimensions['width']:.1f} mm")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with dim_col2:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Profondità", f"{dimensions['depth']:.1f} mm")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with dim_col3:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Altezza", f"{dimensions['height']:.1f} mm")
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                    # Dettaglio costi per pezzo con dimensioni ridotte
+                    st.markdown("##### Dettaglio Costi per Pezzo")
+                    st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                    st.write(f"Tempo di stampa stimato: {calculations['tempo_stampa']:.1f} ore")
+                    st.write(f"Costo Materiale: €{calculations['material_cost']:.2f}")
+                    st.write(f"Costo Macchina: €{calculations['machine_cost']:.2f}")
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                    # Mostra totale per tutte le copie se num_copies > 1
+                    if num_copies > 1:
+                        st.markdown("##### Totale per più pezzi")
+                        total_cost = calculations['total_cost'] * num_copies
+                        total_volume = calculations['volume_cm3'] * num_copies
+                        total_weight = calculations['weight_kg'] * num_copies
+                        total_time = calculations['tempo_stampa'] * num_copies
+
+                        tcol1, tcol2, tcol3 = st.columns(3)
+                        with tcol1:
+                            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                            st.metric("Volume Totale", f"{total_volume:.2f} cm³")
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        with tcol2:
+                            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                            st.metric("Peso Totale", f"{total_weight:.3f} kg")
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        with tcol3:
+                            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                            st.metric("Costo Totale", f"€{total_cost:.2f}")
+                            st.markdown('</div>', unsafe_allow_html=True)
 
                 except Exception as e:
                     logger.error(f"Errore nel processare il file: {str(e)}")

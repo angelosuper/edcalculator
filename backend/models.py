@@ -10,6 +10,7 @@ class Material(Base):
     cost_per_kg = Column(Float)  # EUR/kg
     min_layer_height = Column(Float)  # mm
     max_layer_height = Column(Float)  # mm
+    hourly_cost = Column(Float, default=30.0)  # EUR/hour
 
     # Parametri di stampa
     default_temperature = Column(Float, default=200.0)  # °C

@@ -24,7 +24,7 @@ def fetch_materials():
 
 def validate_material_data(data):
     """Valida i dati del materiale"""
-    required_fields = ['name', 'density', 'cost_per_kg', 'min_layer_height', 'max_layer_height', 'print_speed']
+    required_fields = ['name', 'density', 'cost_per_kg', 'min_layer_height', 'max_layer_height', 'print_speed', 'hourly_cost']
 
     for field in required_fields:
         if not data.get(field):
@@ -34,7 +34,7 @@ def validate_material_data(data):
     numeric_fields = [
         'density', 'cost_per_kg', 'min_layer_height', 'max_layer_height',
         'default_temperature', 'default_bed_temperature', 'retraction_distance',
-        'retraction_speed', 'print_speed', 'first_layer_speed'
+        'retraction_speed', 'print_speed', 'first_layer_speed', 'hourly_cost'
     ]
 
     for field in numeric_fields:
@@ -121,6 +121,7 @@ def materials_manager_page():
             cost_per_kg = st.number_input("Costo per kg (€)", min_value=0.1, value=20.0, step=0.1)
             min_layer_height = st.number_input("Altezza minima layer (mm)", min_value=0.05, value=0.1, step=0.05)
             max_layer_height = st.number_input("Altezza massima layer (mm)", min_value=0.1, value=0.3, step=0.05)
+            hourly_cost = st.number_input("Costo orario stampante (€/h)", min_value=1.0, value=30.0, step=1.0)
 
         with col2:
             default_temperature = st.number_input("Temperatura predefinita (°C)", min_value=150.0, value=200.0, step=5.0)
@@ -145,7 +146,8 @@ def materials_manager_page():
                 "retraction_speed": retraction_speed,
                 "first_layer_speed": print_speed / 2,
                 "fan_speed": 100,
-                "flow_rate": 100
+                "flow_rate": 100,
+                "hourly_cost": hourly_cost
             }
             if add_material(material_data):
                 st.rerun()
@@ -158,19 +160,37 @@ def materials_manager_page():
         st.info("Nessun materiale presente. Aggiungi il tuo primo materiale!")
         return
 
-    # Visualizza i materiali come cards
+    # Visualizza i materiali come cards con CSS migliorato
+    st.markdown("""
+    <style>
+    .material-card {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+    .material-header {
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-bottom: 0.5em;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Visualizza i materiali
     for material in materials:
         with st.container():
             col1, col2, col3 = st.columns([3, 1, 1])
 
             with col1:
-                st.markdown(f"#### {material['name']}")
+                st.markdown(f"<div class='material-card'>", unsafe_allow_html=True)
+                st.markdown(f"<div class='material-header'>{material['name']}</div>", unsafe_allow_html=True)
                 st.markdown(f"""
                 - Densità: {material['density']} g/cm³
-                - Costo: €{material['cost_per_kg']}/kg
+                - Costo materiale: €{material['cost_per_kg']}/kg
+                - Costo macchina: €{material.get('hourly_cost', 30)}/h
                 - Layer: {material['min_layer_height']}-{material['max_layer_height']} mm
                 - Velocità: {material['print_speed']} mm/s
                 """)
+                st.markdown("</div>", unsafe_allow_html=True)
 
             with col2:
                 if st.button("✏️ Modifica", key=f"edit_{material['id']}"):
@@ -192,6 +212,7 @@ def materials_manager_page():
                         new_name = st.text_input("Nome", value=material['name'], key=f"edit_name_{material['id']}")
                         new_density = st.number_input("Densità", value=material['density'], key=f"edit_density_{material['id']}")
                         new_cost = st.number_input("Costo per kg", value=material['cost_per_kg'], key=f"edit_cost_{material['id']}")
+                        new_hourly_cost = st.number_input("Costo orario", value=material.get('hourly_cost', 30), key=f"edit_hourly_{material['id']}")
 
                     with col2:
                         new_min_layer = st.number_input("Min Layer", value=material['min_layer_height'], key=f"edit_min_{material['id']}")
@@ -207,7 +228,8 @@ def materials_manager_page():
                                 "cost_per_kg": new_cost,
                                 "min_layer_height": new_min_layer,
                                 "max_layer_height": new_max_layer,
-                                "print_speed": new_print_speed
+                                "print_speed": new_print_speed,
+                                "hourly_cost": new_hourly_cost
                             }
                             if update_material(material['id'], updated_data):
                                 st.session_state.editing_material_id = None
