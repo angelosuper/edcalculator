@@ -3,6 +3,11 @@ import requests
 import pandas as pd
 import os
 import time
+import logging
+
+# Configure logger
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Ottieni l'URL del backend dall'ambiente o usa un default
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
@@ -69,10 +74,10 @@ def add_material(material_data):
 
 def update_material(material_id, material_data):
     """Aggiorna un materiale esistente"""
-    if not validate_material_data(material_data):
-        return False
-
     try:
+        # Log di debug
+        logger.info(f"Aggiornamento materiale {material_id} con dati: {material_data}")
+
         response = requests.patch(
             f"{BACKEND_URL}/materials/{material_id}",
             json=material_data,
@@ -197,10 +202,10 @@ def materials_manager_page():
                 st.markdown(f"""
                 - Densità: {material['density']} g/cm³
                 - Costo materiale: €{material['cost_per_kg']}/kg
-                - Costo macchina: €{material.get('hourly_cost', 30)}/h
+                - Costo orario macchina: €{material.get('hourly_cost', 30)}/h
                 - Layer: {material['min_layer_height']}-{material['max_layer_height']} mm
                 - Velocità: {material['print_speed']} mm/s
-                """)
+                """, unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
             with col2:
@@ -216,6 +221,8 @@ def materials_manager_page():
             # Se questo materiale è in modalità modifica
             if st.session_state.get('editing_material_id') == material['id']:
                 st.markdown("#### Modifica Materiale")
+                # Parametri principali
+                st.subheader("Parametri Principali")
                 col1, col2 = st.columns(2)
 
                 with col1:
@@ -226,8 +233,13 @@ def materials_manager_page():
                     new_max_layer = st.number_input("Max Layer", value=material['max_layer_height'], key=f"edit_max_{material['id']}")
 
                 with col2:
+                    new_hourly_cost = st.number_input("Costo orario macchina (€/h)", 
+                        value=material.get('hourly_cost', 30), 
+                        min_value=0.1,
+                        step=1.0,
+                        key=f"edit_hourly_{material['id']}"
+                    )
                     new_print_speed = st.number_input("Velocità di stampa", value=material['print_speed'], key=f"edit_speed_{material['id']}")
-                    new_hourly_cost = st.number_input("Costo orario", value=material.get('hourly_cost', 30), key=f"edit_hourly_{material['id']}")
                     new_temperature = st.number_input("Temperatura", value=material.get('default_temperature', 200), key=f"edit_temp_{material['id']}")
                     new_bed_temp = st.number_input("Temperatura piano", value=material.get('default_bed_temperature', 60), key=f"edit_bed_{material['id']}")
 

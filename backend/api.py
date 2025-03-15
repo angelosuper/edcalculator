@@ -46,14 +46,24 @@ def update_material(material_id: int, material: schemas.MaterialUpdate, db: Sess
         if not db_material:
             raise HTTPException(status_code=404, detail="Material not found")
 
+        # Log dei dati ricevuti per debug
+        logger.info(f"Updating material {material_id} with data: {material.dict(exclude_unset=True)}")
+
         for field, value in material.dict(exclude_unset=True).items():
+            logger.info(f"Setting {field} = {value}")
             setattr(db_material, field, value)
 
-        db.commit()
-        db.refresh(db_material)
-        return db_material
+        try:
+            db.commit()
+            db.refresh(db_material)
+            logger.info(f"Material {material_id} updated successfully")
+            return db_material
+        except Exception as e:
+            logger.error(f"Database error while updating material: {str(e)}")
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
     except Exception as e:
-        db.rollback()
         logger.error(f"Error updating material: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 

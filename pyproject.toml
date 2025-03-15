@@ -20,4 +20,5 @@ dependencies = [
     "python-multipart>=0.0.20",
     "streamlit-extras>=0.6.0",
     "trimesh>=4.6.4",
+    "twilio>=9.5.0",
 ]

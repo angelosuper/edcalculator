@@ -8,6 +8,7 @@ class MaterialBase(BaseModel):
     cost_per_kg: float = Field(..., gt=0, description="Costo per kg in EUR")
     min_layer_height: float = Field(..., gt=0, description="Altezza minima layer in mm")
     max_layer_height: float = Field(..., gt=0, description="Altezza massima layer in mm")
+    hourly_cost: float = Field(30.0, gt=0, description="Costo orario della macchina in EUR/h")
 
     # Parametri di stampa con valori di default e validazione
     default_temperature: float = Field(200.0, ge=150.0, le=300.0, description="Temperatura di stampa in °C")
@@ -29,6 +30,7 @@ class MaterialUpdate(BaseModel):
     cost_per_kg: Optional[float] = Field(None, gt=0)
     min_layer_height: Optional[float] = Field(None, gt=0)
     max_layer_height: Optional[float] = Field(None, gt=0)
+    hourly_cost: Optional[float] = Field(None, gt=0)
     default_temperature: Optional[float] = Field(None, ge=150.0, le=300.0)
     default_bed_temperature: Optional[float] = Field(None, ge=0.0, le=120.0)
     retraction_enabled: Optional[bool] = None
