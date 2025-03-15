@@ -88,12 +88,85 @@ def create_3d_visualization(vertices, visualization_mode='points'):
                 center=dict(x=0, y=0, z=0),
                 eye=dict(x=1.5, y=1.5, z=1.5)
             ),
-            xaxis=dict(showgrid=False),
-            yaxis=dict(showgrid=False),
-            zaxis=dict(showgrid=False)
+            xaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='lightgray',
+                zeroline=True,
+                zerolinewidth=2,
+                zerolinecolor='gray'
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='lightgray',
+                zeroline=True,
+                zerolinewidth=2,
+                zerolinecolor='gray'
+            ),
+            zaxis=dict(
+                showgrid=True,
+                gridwidth=1,
+                gridcolor='lightgray',
+                zeroline=True,
+                zerolinewidth=2,
+                zerolinecolor='gray'
+            ),
+            dragmode='orbit'  # Abilita la rotazione tramite drag
         ),
         margin=dict(l=0, r=0, t=0, b=0),
-        showlegend=False
+        showlegend=False,
+        # Aggiungi i controlli di navigazione 3D
+        updatemenus=[
+            dict(
+                type='buttons',
+                showactive=False,
+                buttons=[
+                    dict(
+                        label='Vista Frontale',
+                        method='relayout',
+                        args=[{'scene.camera': dict(
+                            eye=dict(x=0, y=0, z=2),
+                            up=dict(x=0, y=1, z=0),
+                            center=dict(x=0, y=0, z=0)
+                        )}]
+                    ),
+                    dict(
+                        label='Vista Laterale',
+                        method='relayout',
+                        args=[{'scene.camera': dict(
+                            eye=dict(x=2, y=0, z=0),
+                            up=dict(x=0, y=1, z=0),
+                            center=dict(x=0, y=0, z=0)
+                        )}]
+                    ),
+                    dict(
+                        label='Vista Dall\'alto',
+                        method='relayout',
+                        args=[{'scene.camera': dict(
+                            eye=dict(x=0, y=2, z=0),
+                            up=dict(x=0, y=0, z=-1),
+                            center=dict(x=0, y=0, z=0)
+                        )}]
+                    ),
+                    dict(
+                        label='Vista Isometrica',
+                        method='relayout',
+                        args=[{'scene.camera': dict(
+                            eye=dict(x=1.5, y=1.5, z=1.5),
+                            up=dict(x=0, y=1, z=0),
+                            center=dict(x=0, y=0, z=0)
+                        )}]
+                    )
+                ],
+                direction='down',
+                pad={'r': 10, 't': 10},
+                x=0.1,
+                y=1.1,
+                xanchor='left',
+                yanchor='top'
+            )
+        ]
     )
     return fig
 
