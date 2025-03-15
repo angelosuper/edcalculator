@@ -52,6 +52,32 @@ def read_material(material_id: int, db: Session = Depends(database.get_db)):
         raise HTTPException(status_code=404, detail="Material not found")
     return material
 
+@app.patch("/materials/{material_id}", response_model=schemas.Material)
+def update_material(
+    material_id: int,
+    material_update: schemas.MaterialUpdate,
+    db: Session = Depends(database.get_db)
+):
+    logger.info(f"Updating material with id: {material_id}")
+    db_material = db.query(models.Material).filter(models.Material.id == material_id).first()
+    if db_material is None:
+        logger.warning(f"Material with id {material_id} not found")
+        raise HTTPException(status_code=404, detail="Material not found")
+
+    update_data = material_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_material, field, value)
+
+    try:
+        db.commit()
+        db.refresh(db_material)
+        logger.info(f"Material {db_material.name} updated successfully")
+        return db_material
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating material: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Printers endpoints
 @app.post("/printers/", response_model=schemas.Printer)
 def create_printer(printer: schemas.PrinterCreate, db: Session = Depends(database.get_db)):
