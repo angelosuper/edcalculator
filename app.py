@@ -3,9 +3,63 @@ import plotly.graph_objects as go
 import numpy as np
 import requests
 import pandas as pd
+import json
 
 from stl_processor import process_stl, calculate_print_cost
 from materials_manager import materials_manager_page, fetch_materials
+
+# Configurazione tema
+def configure_theme():
+    # Inizializza lo stato del tema se non esiste
+    if 'dark_mode' not in st.session_state:
+        st.session_state.dark_mode = False
+
+    # Sidebar per le impostazioni del tema
+    with st.sidebar:
+        st.title("📌 Navigazione")
+        st.markdown("---")
+
+        # Selettore tema
+        theme = st.radio(
+            "🎨 Tema:",
+            ["☀️ Modalità Giorno", "🌙 Modalità Notte"],
+            index=1 if st.session_state.dark_mode else 0,
+            key="theme_selector"
+        )
+
+        # Aggiorna il tema
+        st.session_state.dark_mode = theme == "🌙 Modalità Notte"
+
+        # Applica il tema
+        if st.session_state.dark_mode:
+            st.markdown("""
+                <style>
+                    .stApp {
+                        background-color: #0e1117;
+                        color: #fafafa;
+                    }
+                    .stButton>button {
+                        background-color: #262730;
+                        color: #fafafa;
+                    }
+                    .stTextInput>div>div>input {
+                        background-color: #262730;
+                        color: #fafafa;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+
+        st.markdown("---")
+        # Menu di navigazione
+        page = st.radio(
+            "📍 Seleziona una sezione:",
+            ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
+            format_func=lambda x: x.split(" ", 1)[1]
+        )
+        st.markdown("---")
+        st.info("👆 Usa il menu sopra per navigare tra le sezioni dell'applicazione")
+
+        return page
 
 def get_materials_from_api():
     """Recupera i materiali dal backend"""
@@ -197,17 +251,8 @@ def main():
         layout="wide"
     )
 
-    # Barra laterale più evidente
-    with st.sidebar:
-        st.title("📌 Navigazione")
-        st.markdown("---")
-        page = st.radio(
-            "Seleziona una sezione:",
-            ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
-            format_func=lambda x: x.split(" ", 1)[1]  # Mostra solo il testo dopo l'emoji
-        )
-        st.markdown("---")
-        st.info("👆 Usa il menu sopra per navigare tra le sezioni dell'applicazione")
+    # Configura e ottieni la pagina selezionata
+    page = configure_theme()
 
     # Contenuto principale
     if page == "🧮 Calcolo Costi":
