@@ -148,11 +148,11 @@ def materials_manager_page():
                         with col2:
                             if st.button("✏️ Modifica", key=f"edit_{material['id']}"):
                                 st.session_state.editing_material = material
-                                st.experimental_rerun()
+                                st.rerun()
                         with col3:
                             if st.button("🗑️ Elimina", key=f"delete_{material['id']}"):
                                 if delete_material(material['id']):
-                                    st.experimental_rerun()
+                                    st.rerun()
                         st.markdown("---")
 
                 # Form di modifica se un materiale è selezionato
@@ -165,11 +165,11 @@ def materials_manager_page():
                             if st.form_submit_button("💾 Salva Modifiche"):
                                 if update_material(st.session_state.editing_material['id'], material_data):
                                     st.session_state.editing_material = None
-                                    st.experimental_rerun()
+                                    st.rerun()
                         with col2:
                             if st.form_submit_button("❌ Annulla"):
                                 st.session_state.editing_material = None
-                                st.experimental_rerun()
+                                st.rerun()
 
     with tab2:
         st.subheader("➕ Aggiungi Nuovo Materiale")
@@ -177,4 +177,4 @@ def materials_manager_page():
             material_data = material_form()
             if st.form_submit_button("➕ Aggiungi Materiale"):
                 if add_material(material_data):
-                    st.experimental_rerun()
+                    st.rerun()
