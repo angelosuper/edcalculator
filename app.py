@@ -151,106 +151,107 @@ def main():
                         st.components.v1.html(
                             f"""
                             <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
-                            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-                            <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-                            <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/STLLoader.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
                             <script>
-                                // Contenitore e dimensioni
-                                const container = document.getElementById('stl_viewer');
-                                const width = container.clientWidth;
-                                const height = container.clientHeight;
+                                function initViewer() {{
+                                    // Inizializza la scena
+                                    const scene = new THREE.Scene();
+                                    scene.background = new THREE.Color(0xf5f5f5);
 
-                                // Scene setup
-                                const scene = new THREE.Scene();
-                                scene.background = new THREE.Color(0xf5f5f5);
+                                    // Crea il contenitore
+                                    const container = document.getElementById('stl_viewer');
 
-                                // Camera setup
-                                const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-                                camera.position.set(100, 100, 100);
+                                    // Configura la camera
+                                    const camera = new THREE.PerspectiveCamera(
+                                        75,
+                                        container.clientWidth / container.clientHeight,
+                                        0.1,
+                                        1000
+                                    );
+                                    camera.position.set(0, 0, 100);
 
-                                // Renderer setup
-                                const renderer = new THREE.WebGLRenderer({ antialias: true });
-                                renderer.setSize(width, height);
-                                container.appendChild(renderer.domElement);
+                                    // Configura il renderer
+                                    const renderer = new THREE.WebGLRenderer();
+                                    renderer.setSize(container.clientWidth, container.clientHeight);
+                                    container.appendChild(renderer.domElement);
 
-                                // Illuminazione
-                                const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
-                                scene.add(ambientLight);
+                                    // Aggiungi le luci
+                                    const light = new THREE.DirectionalLight(0xffffff, 1);
+                                    light.position.set(1, 1, 1);
+                                    scene.add(light);
+                                    scene.add(new THREE.AmbientLight(0x404040));
 
-                                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-                                directionalLight.position.set(1, 1, 1);
-                                scene.add(directionalLight);
+                                    // Aggiungi i controlli
+                                    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                                    controls.enableDamping = true;
+                                    controls.dampingFactor = 0.05;
 
-                                // Controlli della camera
-                                const controls = new THREE.OrbitControls(camera, renderer.domElement);
-                                controls.enableDamping = true;
-                                controls.dampingFactor = 0.05;
-                                controls.screenSpacePanning = false;
-                                controls.minDistance = 50;
-                                controls.maxDistance = 300;
+                                    // Decodifica il file STL da base64
+                                    const modelData = atob('{file_base64}');
+                                    const buffer = new Uint8Array(modelData.length);
+                                    for (let i = 0; i < modelData.length; i++) {{
+                                        buffer[i] = modelData.charCodeAt(i);
+                                    }}
 
-                                // Carica il modello STL
-                                const loader = new THREE.STLLoader();
-                                const modelData = atob('{file_base64}');
-                                const buffer = new Uint8Array(modelData.length);
-                                for (let i = 0; i < modelData.length; i++) {{
-                                    buffer[i] = modelData.charCodeAt(i);
+                                    // Carica il modello STL
+                                    const loader = new THREE.STLLoader();
+
+                                    try {{
+                                        const geometry = loader.parse(buffer.buffer);
+                                        const material = new THREE.MeshPhongMaterial({{
+                                            color: 0x1E88E5,
+                                            shininess: 100
+                                        }});
+                                        const mesh = new THREE.Mesh(geometry, material);
+
+                                        // Centra e scala il modello
+                                        geometry.computeBoundingBox();
+                                        const box = geometry.boundingBox;
+                                        const center = new THREE.Vector3();
+                                        box.getCenter(center);
+                                        mesh.position.sub(center);
+
+                                        const maxDim = Math.max(
+                                            box.max.x - box.min.x,
+                                            box.max.y - box.min.y,
+                                            box.max.z - box.min.z
+                                        );
+                                        const scale = 50 / maxDim;
+                                        mesh.scale.multiplyScalar(scale);
+
+                                        scene.add(mesh);
+
+                                        // Posiziona la camera
+                                        camera.position.set(50, 50, 50);
+                                        camera.lookAt(0, 0, 0);
+
+                                        // Loop di rendering
+                                        function animate() {{
+                                            requestAnimationFrame(animate);
+                                            controls.update();
+                                            renderer.render(scene, camera);
+                                        }}
+                                        animate();
+
+                                        console.log('Modello STL caricato con successo');
+                                    }} catch (error) {{
+                                        console.error('Errore:', error);
+                                        container.innerHTML = `
+                                            <div style="color: red; padding: 20px; text-align: center;">
+                                                <p>Errore nel caricamento del modello 3D</p>
+                                                <p style="font-size: 0.8em;">Dettaglio: ${{error.message}}</p>
+                                            </div>
+                                        `;
+                                    }}
                                 }}
 
-                                try {{
-                                    const geometry = loader.parse(buffer.buffer);
-                                    const material = new THREE.MeshPhongMaterial({{
-                                        color: 0x1E88E5,
-                                        specular: 0x111111,
-                                        shininess: 200
-                                    }});
-                                    const mesh = new THREE.Mesh(geometry, material);
-
-                                    // Centra il modello
-                                    geometry.computeBoundingBox();
-                                    const center = new THREE.Vector3();
-                                    geometry.boundingBox.getCenter(center);
-                                    mesh.position.sub(center);
-
-                                    // Calcola la dimensione per il posizionamento della camera
-                                    const box = new THREE.Box3().setFromObject(mesh);
-                                    const size = box.getSize(new THREE.Vector3());
-                                    const maxDim = Math.max(size.x, size.y, size.z);
-
-                                    // Scala il modello se necessario
-                                    if (maxDim > 200) {{
-                                        const scale = 200 / maxDim;
-                                        mesh.scale.multiplyScalar(scale);
-                                    }}
-
-                                    scene.add(mesh);
-
-                                    // Posiziona la camera
-                                    camera.position.set(maxDim * 2, maxDim * 2, maxDim * 2);
-                                    camera.lookAt(0, 0, 0);
-                                    controls.target.set(0, 0, 0);
-
-                                    // Animazione
-                                    function animate() {{
-                                        requestAnimationFrame(animate);
-                                        controls.update();
-                                        renderer.render(scene, camera);
-                                    }}
-                                    animate();
-
-                                    // Gestione del ridimensionamento
-                                    window.addEventListener('resize', () => {{
-                                        const newWidth = container.clientWidth;
-                                        const newHeight = container.clientHeight;
-                                        camera.aspect = newWidth / newHeight;
-                                        camera.updateProjectionMatrix();
-                                        renderer.setSize(newWidth, newHeight);
-                                    }});
-
-                                    console.log('Modello STL caricato con successo');
-                                }} catch (error) {{
-                                    console.error('Errore nel caricamento del modello:', error);
-                                    container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello 3D: ' + error.message + '</div>';
+                                // Inizializza il visualizzatore
+                                if (document.readyState === 'complete') {{
+                                    initViewer();
+                                }} else {{
+                                    window.addEventListener('load', initViewer);
                                 }}
                             </script>
                             """,
