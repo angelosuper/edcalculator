@@ -31,17 +31,68 @@ def configure_theme():
         if st.session_state.dark_mode:
             st.markdown("""
                 <style>
+                    /* Tema generale */
                     .stApp {
                         background-color: #0e1117;
                         color: #fafafa;
                     }
+
+                    /* Bottoni */
                     .stButton>button {
                         background-color: #262730;
                         color: #fafafa;
+                        border: 1px solid #464855;
                     }
-                    .stTextInput>div>div>input {
+
+                    /* Input di testo */
+                    .stTextInput>div>div>input, .stNumberInput>div>div>input {
                         background-color: #262730;
                         color: #fafafa;
+                        border-color: #464855;
+                    }
+
+                    /* Selectbox e multiselect */
+                    .stSelectbox>div>div, .stMultiSelect>div>div {
+                        background-color: #262730;
+                        color: #fafafa;
+                    }
+
+                    /* Slider */
+                    .stSlider>div>div {
+                        background-color: #262730;
+                    }
+
+                    /* DataFrames/Tabelle */
+                    .dataframe {
+                        background-color: #1b1e23;
+                        color: #fafafa;
+                    }
+                    .dataframe th {
+                        background-color: #262730;
+                    }
+                    .dataframe td {
+                        background-color: #1b1e23;
+                    }
+
+                    /* Tabs */
+                    .stTabs [data-baseweb="tab-list"] {
+                        background-color: #262730;
+                    }
+                    .stTabs [data-baseweb="tab"] {
+                        color: #fafafa;
+                    }
+
+                    /* Contenitori e card */
+                    [data-testid="stDecoration"], div.stBlock {
+                        background-color: #262730;
+                    }
+
+                    /* Miglioramento leggibilità testo */
+                    p, div, span {
+                        color: #fafafa;
+                    }
+                    h1, h2, h3, h4, h5, h6 {
+                        color: #ffffff;
                     }
                 </style>
                 """, unsafe_allow_html=True)
