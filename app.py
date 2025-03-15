@@ -201,88 +201,43 @@ def main():
                     st.write(f"Costo Materiale: €{calculations['material_cost']}")
                     st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-                    # Visualizzazione 3D semplificata
+                    # Visualizzazione 3D semplice
                     st.subheader("Anteprima Modello")
                     try:
                         # Converti il file STL in base64
                         file_content = uploaded_file.getvalue()
                         file_base64 = base64.b64encode(file_content).decode()
 
-                        # Crea il visualizzatore
+                        # Crea il visualizzatore semplice
                         st.components.v1.html(
                             f"""
                             <div id="stl_viewer" style="width:100%; height:400px; border:1px solid #ddd; background:#f5f5f5;"></div>
-                            <script src="https://viewstl.com/threejs/three.min.js"></script>
-                            <script src="https://viewstl.com/threejs/OrbitControls.js"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/stl-viewer@0.12.0/lib/stl-viewer.min.js"></script>
                             <script>
-                                window.addEventListener('load', function() {{
-                                    try {{
-                                        // Inizializza la scena
-                                        const scene = new THREE.Scene();
-                                        scene.background = new THREE.Color(0xf5f5f5);
-
-                                        // Camera
-                                        const camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 1, 500);
-                                        camera.position.set(0, 0, 100);
-
-                                        // Renderer
-                                        const renderer = new THREE.WebGLRenderer();
-                                        renderer.setSize(document.getElementById('stl_viewer').clientWidth, 400);
-                                        document.getElementById('stl_viewer').appendChild(renderer.domElement);
-
-                                        // Luci
-                                        scene.add(new THREE.AmbientLight(0x999999));
-                                        const light = new THREE.DirectionalLight(0xffffff, 0.8);
-                                        light.position.set(0, 0, 1);
-                                        scene.add(light);
-
-                                        // Controlli
-                                        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-                                        // Carica il modello
-                                        const loader = new THREE.STLLoader();
-                                        const buffer = new Uint8Array(atob('{file_base64}').split('').map(c => c.charCodeAt(0)));
-                                        const geometry = loader.parse(buffer.buffer);
-
-                                        // Crea il materiale e la mesh
-                                        const material = new THREE.MeshPhongMaterial({{
-                                            color: 0x1E88E5,
-                                            shininess: 30,
-                                            specular: 0x111111
-                                        }});
-                                        const mesh = new THREE.Mesh(geometry, material);
-
-                                        // Centra il modello
-                                        geometry.computeBoundingBox();
-                                        const center = new THREE.Vector3();
-                                        geometry.boundingBox.getCenter(center);
-                                        mesh.position.sub(center);
-
-                                        scene.add(mesh);
-
-                                        // Loop di rendering
-                                        function animate() {{
-                                            requestAnimationFrame(animate);
-                                            controls.update();
-                                            renderer.render(scene, camera);
+                                const viewer = new StlViewer(
+                                    document.getElementById('stl_viewer'),
+                                    { models: [
+                                        {{
+                                            filename: 'model.stl',
+                                            content: atob('{file_base64}'),
+                                            color: '#1E88E5'
                                         }}
-                                        animate();
-
-                                        console.log('Visualizzatore inizializzato con successo');
-                                    }} catch (error) {{
-                                        console.error('Errore:', error);
-                                        document.getElementById('stl_viewer').innerHTML = 
-                                            '<div style="color: red; padding: 20px;">Errore nel caricamento del modello 3D: ' + 
-                                            error.message + '</div>';
+                                    ],
+                                    camera: {{
+                                        target: [0, 0, 0],
+                                        distance: 100
+                                    }},
+                                    controls: {{
+                                        autoRotate: false
                                     }}
-                                }});
+                                });
                             </script>
                             """,
                             height=400
                         )
 
                     except Exception as e:
-                        st.error(f"Errore nella visualizzazione del modello 3D: {str(e)}")
+                        st.error(f"Errore nel processare il file: {str(e)}")
 
                 except Exception as e:
                     logger.error(f"Errore nel processare il file: {str(e)}")

@@ -1,0 +1,17 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "## Prerequisiti - Hosting Aruba con supporto Python - Accesso SSH al server - Database PostgreSQL (fornito da Aruba o esterno)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-stl-viewer": "^2.5.0"
+  }
+}
