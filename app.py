@@ -5,10 +5,11 @@ import numpy as np
 from materials import get_materials_df, get_material_properties, MATERIALS_DATA
 from stl_processor import process_stl, calculate_print_cost
 
-def create_3d_visualization(vertices):
-    """Crea una visualizzazione 3D del modello STL"""
-    fig = go.Figure(data=[
-        go.Scatter3d(
+def create_3d_visualization(vertices, visualization_mode='points'):
+    """Crea una visualizzazione 3D del modello STL con diverse modalità"""
+
+    if visualization_mode == 'points':
+        trace = go.Scatter3d(
             x=vertices[:, 0],
             y=vertices[:, 1],
             z=vertices[:, 2],
@@ -19,15 +20,53 @@ def create_3d_visualization(vertices):
                 opacity=0.8
             )
         )
-    ])
+    elif visualization_mode == 'surface':
+        # Creare una mesh di superficie
+        trace = go.Mesh3d(
+            x=vertices[:, 0],
+            y=vertices[:, 1],
+            z=vertices[:, 2],
+            color='blue',
+            opacity=0.8
+        )
+    elif visualization_mode == 'wireframe':
+        trace = go.Scatter3d(
+            x=vertices[:, 0],
+            y=vertices[:, 1],
+            z=vertices[:, 2],
+            mode='lines',
+            line=dict(
+                color='blue',
+                width=1
+            )
+        )
+    else:  # combination
+        trace1 = go.Mesh3d(
+            x=vertices[:, 0],
+            y=vertices[:, 1],
+            z=vertices[:, 2],
+            color='blue',
+            opacity=0.5
+        )
+        trace2 = go.Scatter3d(
+            x=vertices[:, 0],
+            y=vertices[:, 1],
+            z=vertices[:, 2],
+            mode='lines',
+            line=dict(
+                color='white',
+                width=1
+            )
+        )
+        return go.Figure(data=[trace1, trace2])
 
+    fig = go.Figure(data=[trace])
     fig.update_layout(
         scene=dict(
             aspectmode='data'
         ),
         margin=dict(l=0, r=0, t=0, b=0)
     )
-
     return fig
 
 def main():
@@ -98,9 +137,21 @@ def main():
                 st.write(f"Costo Materiale: €{calculations['material_cost']}")
                 st.write(f"Costo Macchina: €{calculations['machine_cost']} (€30/ora)")
 
-                # Visualizzazione 3D
+                # Selezione modalità visualizzazione
                 st.subheader("Anteprima Modello")
-                fig = create_3d_visualization(vertices)
+                visualization_mode = st.selectbox(
+                    "Modalità di visualizzazione",
+                    options=['points', 'surface', 'wireframe', 'combination'],
+                    format_func=lambda x: {
+                        'points': 'Punti',
+                        'surface': 'Superficie',
+                        'wireframe': 'Reticolo',
+                        'combination': 'Combinato'
+                    }[x]
+                )
+
+                # Visualizzazione 3D
+                fig = create_3d_visualization(vertices, visualization_mode)
                 st.plotly_chart(fig, use_container_width=True)
 
             except Exception as e:
