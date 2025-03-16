@@ -9,8 +9,8 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Get backend URL from environment with production fallback
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://0.0.0.0:8000')
+# Ottieni l'URL del backend dall'ambiente o usa un default
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
 
 def fetch_materials():
     """Recupera la lista dei materiali dal backend"""
