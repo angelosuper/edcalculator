@@ -244,6 +244,175 @@ def main():
                     }, duration);
                 }
 
+                // Funzione per caricare il modello STL
+                async function loadSTLModel(modelBase64) {
+                    try {
+                        console.log("Inizia il caricamento del modello...");
+
+                        // Pulisci la scena prima di caricare un nuovo modello
+                        clearScene();
+
+                        // Decodifica il modello da base64
+                        console.log("Decodifica base64...");
+                        const modelData = atob(modelBase64);
+                        const buffer = new Uint8Array(modelData.length);
+                        for (let i = 0; i < modelData.length; i++) {
+                            buffer[i] = modelData.charCodeAt(i);
+                        }
+
+                        // Carica il modello
+                        console.log("Parsing del file STL...");
+                        const loader = new THREE.STLLoader();
+                        const geometry = loader.parse(buffer.buffer);
+
+                        console.log("Creazione del materiale...");
+                        const material = new THREE.MeshPhongMaterial({
+                            color: 0x1E88E5,
+                            shininess: 50,
+                            specular: 0x444444,
+                            flatShading: false
+                        });
+
+                        // Crea la mesh
+                        console.log("Creazione della mesh...");
+                        mesh = new THREE.Mesh(geometry, material);
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+
+                        // Centra e scala il modello
+                        console.log("Centraggio e scalatura del modello...");
+                        geometry.computeBoundingBox();
+                        const center = new THREE.Vector3();
+                        geometry.boundingBox.getCenter(center);
+                        mesh.position.sub(center);
+
+                        const size = new THREE.Vector3();
+                        geometry.boundingBox.getSize(size);
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const scale = 100 / maxDim;
+                        mesh.scale.multiplyScalar(scale);
+
+                        // Aggiungi alla scena
+                        console.log("Aggiunta del modello alla scena...");
+                        scene.add(mesh);
+
+                        // Aggiungi gli eventi interattivi
+                        container.addEventListener('dblclick', spinAnimation);
+
+                        console.log("Modello caricato con successo!");
+                        showEasterEggMessage('👋 Prova il doppio click per far girare il modello!');
+
+                        return true;
+                    } catch (error) {
+                        console.error('Errore nel caricamento del modello:', error);
+                        document.getElementById('stl_viewer').innerHTML = 
+                            `<div style="color: red; padding: 20px;">
+                                Errore nel caricamento del modello: ${error.message}
+                            </div>`;
+                        return false;
+                    }
+                }
+
+                // Verifica che Three.js sia caricato
+                if (typeof THREE === 'undefined') {
+                    document.getElementById('stl_viewer').innerHTML = 
+                        '<div style="color: red; padding: 20px;">Three.js non è stato caricato</div>';
+                    throw new Error('Three.js non è stato caricato');
+                }
+
+                // Setup base
+                console.log("Inizializzazione del visualizzatore 3D...");
+                const container = document.getElementById('stl_viewer');
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0xf5f5f5);
+
+                camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                camera.position.set(100, 100, 100);
+                camera.lookAt(0, 0, 0);
+
+                const renderer = new THREE.WebGLRenderer({antialias: true});
+                renderer.setSize(500, 500);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                container.appendChild(renderer.domElement);
+
+                // Aggiungi controlli orbitali
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.screenSpacePanning = true;
+                controls.minDistance = 50;
+                controls.maxDistance = 300;
+                controls.maxPolarAngle = Math.PI;
+
+                // Sistema di illuminazione
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+                scene.add(ambientLight);
+
+                const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+                mainLight.position.set(2, 2, 1).normalize();
+                mainLight.castShadow = true;
+                scene.add(mainLight);
+
+                const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+                fillLight.position.set(-1, 0, 2).normalize();
+                scene.add(fillLight);
+
+                const bottomLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                bottomLight.position.set(0, -1, 0).normalize();
+                scene.add(bottomLight);
+
+                const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                backLight.position.set(-1, 1, -2).normalize();
+                scene.add(backLight);
+
+                // Funzioni di controllo camera
+                window.resetCamera = function() {
+                    camera.position.set(100, 100, 100);
+                    camera.lookAt(0, 0, 0);
+                    controls.reset();
+                }
+
+                window.zoomIn = function() {
+                    camera.position.multiplyScalar(0.8);
+                }
+
+                window.zoomOut = function() {
+                    camera.position.multiplyScalar(1.2);
+                }
+
+                function clearScene() {
+                    if (mesh) {
+                        scene.remove(mesh);
+                        mesh.geometry.dispose();
+                        mesh.material.dispose();
+                        mesh = null;
+                    }
+                }
+
+                // Loop di rendering
+                function animate() {
+                    requestAnimationFrame(animate);
+                    controls.update();
+                    renderer.render(scene, camera);
+                }
+                animate();
+
+                // Gestione ridimensionamento
+                window.addEventListener('resize', function() {
+                    camera.updateProjectionMatrix();
+                });
+
+                // Gestione eventi per gli easter eggs
+                document.addEventListener('keydown', (event) => {
+                    if (event.code === 'Space') {
+                        event.preventDefault();
+                        bounceAnimation();
+                    } else if (event.code === 'KeyR') {
+                        startRainbowEffect();
+                    }
+                });
+
                 // Animazione di rotazione
                 function spinAnimation() {
                     if (!mesh || isAnimating) return;
@@ -307,172 +476,44 @@ def main():
                     }, 3000);
                 }
 
-                // Gestione eventi
-                document.addEventListener('keydown', (event) => {
-                    if (event.code === 'Space') {
-                        event.preventDefault();
-                        bounceAnimation();
-                    } else if (event.code === 'KeyR') {
-                        startRainbowEffect();
-                    }
-                });
-
-                // Verifica che Three.js sia caricato
-                if (typeof THREE === 'undefined') {
-                    document.getElementById('stl_viewer').innerHTML = 
-                        '<div style="color: red; padding: 20px;">Three.js non è stato caricato</div>';
-                    throw new Error('Three.js non è stato caricato');
+                // Se c'è un modello da caricare, caricalo
+                if (typeof MODEL_BASE64 !== 'undefined') {
+                    loadSTLModel(MODEL_BASE64);
                 }
-
-                // Setup base
-                const container = document.getElementById('stl_viewer');
-                const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0xf5f5f5);
-
-                camera = new THREE.PerspectiveCamera(
-                    75, 1, 0.1, 1000  // aspect ratio 1:1 per vista quadrata
-                );
-                camera.position.set(100, 100, 100);
-                camera.lookAt(0, 0, 0);
-
-                const renderer = new THREE.WebGLRenderer({antialias: true});
-                renderer.setSize(500, 500);  // Dimensioni fisse quadrate
-                renderer.shadowMap.enabled = true;  // Abilita le ombre
-                renderer.shadowMap.type = THREE.PCFSoftShadowMap;  // Ombre morbide
-                container.appendChild(renderer.domElement);
-
-                // Aggiungi controlli orbitali
-                controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controls.screenSpacePanning = true;
-                controls.minDistance = 50;
-                controls.maxDistance = 300;
-                controls.maxPolarAngle = Math.PI;
-
-                // Sistema di illuminazione migliorato
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
-                scene.add(ambientLight);
-
-                const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
-                mainLight.position.set(2, 2, 1).normalize();
-                mainLight.castShadow = true;
-                scene.add(mainLight);
-
-                const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
-                fillLight.position.set(-1, 0, 2).normalize();
-                scene.add(fillLight);
-
-                const bottomLight = new THREE.DirectionalLight(0xffffff, 0.3);
-                bottomLight.position.set(0, -1, 0).normalize();
-                scene.add(bottomLight);
-
-                const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
-                backLight.position.set(-1, 1, -2).normalize();
-                scene.add(backLight);
-
-                // Funzioni di controllo camera
-                window.resetCamera = function() {
-                    camera.position.set(100, 100, 100);
-                    camera.lookAt(0, 0, 0);
-                    controls.reset();
-                }
-
-                window.zoomIn = function() {
-                    camera.position.multiplyScalar(0.8);
-                }
-
-                window.zoomOut = function() {
-                    camera.position.multiplyScalar(1.2);
-                }
-
-                function clearScene() {
-                    if (mesh) {
-                        scene.remove(mesh);
-                        mesh.geometry.dispose();
-                        mesh.material.dispose();
-                        mesh = null;
-                    }
-                }
-
-                // Loop di rendering
-                function animate() {
-                    requestAnimationFrame(animate);
-                    controls.update();
-                    renderer.render(scene, camera);
-                }
-                animate();
-
-                // Gestione ridimensionamento
-                window.addEventListener('resize', function() {
-                    camera.updateProjectionMatrix();
-                });
-            </script>
-            """
-
-            model_loader_script = """
-            <script>
-            try {
-                console.log("Starting model loading...");
-                const loader = new THREE.STLLoader();
-                clearScene();  // Pulisci la scena prima di caricare un nuovo modello
-
-                const modelData = atob("MODEL_BASE64");
-                const buffer = new Uint8Array(modelData.length);
-                for (let i = 0; i < modelData.length; i++) {
-                    buffer[i] = modelData.charCodeAt(i);
-                }
-
-                console.log("Parsing STL data...");
-                const geometry = loader.parse(buffer.buffer);
-                console.log("STL parsed successfully");
-
-                const material = new THREE.MeshPhongMaterial({
-                    color: 0x1E88E5,
-                    shininess: 50,
-                    specular: 0x444444,
-                    flatShading: false
-                });
-                mesh = new THREE.Mesh(geometry, material);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-
-                // Auto-centraggio e scala
-                geometry.computeBoundingBox();
-                const center = new THREE.Vector3();
-                geometry.boundingBox.getCenter(center);
-                mesh.position.sub(center);
-
-                // Calcola scala appropriata
-                const size = new THREE.Vector3();
-                geometry.boundingBox.getSize(size);
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 100 / maxDim;
-                mesh.scale.multiplyScalar(scale);
-
-                scene.add(mesh);
-                console.log("Model added to scene successfully");
-
-                // Aggiungi evento double click per la rotazione
-                container.addEventListener('dblclick', () => {
-                    spinAnimation();
-                });
-
-                showEasterEggMessage('👋 Prova il doppio click per far girare il modello!');
-            } catch (error) {
-                console.error('Errore nel parsing STL:', error);
-                container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello</div>';
-            }
             </script>
             """
 
             if uploaded_file:
-                model_base64 = base64.b64encode(uploaded_file.getvalue()).decode()
-                complete_viewer_html = base_viewer_html + model_loader_script.replace('MODEL_BASE64', model_base64)
-            else:
-                complete_viewer_html = base_viewer_html
+                try:
+                    st.write("Preparazione file per la visualizzazione...")
+                    file_contents = uploaded_file.getvalue()
+                    st.write(f"Dimensione file: {len(file_contents)} bytes")
 
-            st.components.v1.html(complete_viewer_html, height=520)
+                    # Prepara il codice JavaScript
+                    model_base64 = base64.b64encode(file_contents).decode()
+                    st.write("Conversione base64 completata")
+
+                    # Inserisci il modello base64 nel codice JavaScript
+                    model_script = f"""
+                    <script>
+                        const MODEL_BASE64 = "{model_base64}";
+                        // Il modello verrà caricato automaticamente dalla funzione loadSTLModel
+                    </script>
+                    """
+
+                    # Combina tutto il codice HTML/JavaScript
+                    complete_viewer_html = base_viewer_html + model_script
+
+                    # Visualizza il componente
+                    st.components.v1.html(complete_viewer_html, height=520)
+                    st.write("Controlla la console del browser per i dettagli del caricamento.")
+
+                except Exception as e:
+                    st.error(f"Errore durante la preparazione del file: {str(e)}")
+                    logger.error(f"Errore nel processare il file: {str(e)}")
+            else:
+                # Se non c'è un file caricato, mostra solo il visualizzatore vuoto
+                st.components.v1.html(base_viewer_html, height=520)
 
             if uploaded_file is not None:
                 try:
