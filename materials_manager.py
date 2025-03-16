@@ -6,11 +6,11 @@ import time
 import logging
 
 # Configure logger
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Ottieni l'URL del backend dall'ambiente o usa un default
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://0.0.0.0:8000')
 
 def fetch_materials():
     """Recupera la lista dei materiali dal backend"""
