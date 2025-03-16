@@ -220,12 +220,102 @@ def main():
                         🔍- Zoom Out
                     </button>
                 </div>
+                <div id="easter_egg_message" style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); 
+                    background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; display: none;
+                    font-size: 14px; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                </div>
             </div>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js"></script>
             <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js"></script>
             <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/controls/OrbitControls.js"></script>
             <script>
                 let camera, controls;
+                let mesh = null;
+                let isAnimating = false;
+                let rainbowInterval = null;
+
+                // Funzione per mostrare messaggi degli easter egg
+                function showEasterEggMessage(message, duration = 2000) {
+                    const messageEl = document.getElementById('easter_egg_message');
+                    messageEl.textContent = message;
+                    messageEl.style.display = 'block';
+                    setTimeout(() => {
+                        messageEl.style.display = 'none';
+                    }, duration);
+                }
+
+                // Animazione di rotazione
+                function spinAnimation() {
+                    if (!mesh || isAnimating) return;
+                    isAnimating = true;
+                    showEasterEggMessage('🌀 Weeeeeee!');
+
+                    let rotation = 0;
+                    function animate() {
+                        if (rotation < Math.PI * 2) {
+                            rotation += 0.1;
+                            mesh.rotation.y += 0.1;
+                            requestAnimationFrame(animate);
+                        } else {
+                            isAnimating = false;
+                        }
+                    }
+                    animate();
+                }
+
+                // Animazione di rimbalzo
+                function bounceAnimation() {
+                    if (!mesh || isAnimating) return;
+                    isAnimating = true;
+                    showEasterEggMessage('🦘 Boing!');
+
+                    let time = 0;
+                    const startY = mesh.position.y;
+                    function animate() {
+                        if (time < Math.PI) {
+                            time += 0.1;
+                            mesh.position.y = startY + Math.sin(time) * 20;
+                            requestAnimationFrame(animate);
+                        } else {
+                            mesh.position.y = startY;
+                            isAnimating = false;
+                        }
+                    }
+                    animate();
+                }
+
+                // Effetto arcobaleno
+                function startRainbowEffect() {
+                    if (!mesh || rainbowInterval) return;
+                    showEasterEggMessage('🌈 Rainbow mode activated!');
+
+                    let hue = 0;
+                    rainbowInterval = setInterval(() => {
+                        hue = (hue + 1) % 360;
+                        const color = new THREE.Color(`hsl(${hue}, 100%, 50%)`);
+                        mesh.material.color = color;
+                    }, 50);
+
+                    // Disattiva dopo 3 secondi
+                    setTimeout(() => {
+                        if (rainbowInterval) {
+                            clearInterval(rainbowInterval);
+                            rainbowInterval = null;
+                            mesh.material.color = new THREE.Color(0x1E88E5);
+                            showEasterEggMessage('🎨 Back to blue!');
+                        }
+                    }, 3000);
+                }
+
+                // Gestione eventi
+                document.addEventListener('keydown', (event) => {
+                    if (event.code === 'Space') {
+                        event.preventDefault();
+                        bounceAnimation();
+                    } else if (event.code === 'KeyR') {
+                        startRainbowEffect();
+                    }
+                });
 
                 // Verifica che Three.js sia caricato
                 if (typeof THREE === 'undefined') {
@@ -318,7 +408,7 @@ def main():
                         specular: 0x444444,  // Colore dei riflessi più intenso
                         flatShading: false  // Shading più smooth
                     });
-                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh = new THREE.Mesh(geometry, material);
                     mesh.castShadow = true;
                     mesh.receiveShadow = true;
 
@@ -336,6 +426,11 @@ def main():
                     mesh.scale.multiplyScalar(scale);
 
                     scene.add(mesh);
+
+                    // Aggiungi evento double click per la rotazione
+                    container.addEventListener('dblclick', () => {
+                        spinAnimation();
+                    });
                 } catch (error) {
                     console.error('Errore nel parsing STL:', error);
                     container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello</div>';
