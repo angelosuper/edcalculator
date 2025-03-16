@@ -9,22 +9,37 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Ottieni l'URL del backend dall'ambiente o usa un default
+# Use relative URL for backend in production
 BACKEND_URL = os.getenv('BACKEND_URL', 'http://0.0.0.0:8000')
+if BACKEND_URL.startswith('/'):
+    # In produzione, usa il percorso relativo
+    logger.info("Usando percorso relativo per il backend")
+else:
+    # In sviluppo, assicurati che l'URL abbia lo schema http
+    if not BACKEND_URL.startswith(('http://', 'https://')):
+        BACKEND_URL = 'http://' + BACKEND_URL
+    logger.info(f"Usando URL completo per il backend: {BACKEND_URL}")
 
 def fetch_materials():
     """Recupera la lista dei materiali dal backend"""
     with st.spinner('🔄 Caricamento materiali in corso...'):
         try:
-            response = requests.get(f"{BACKEND_URL}/materials/")
+            logger.info(f"Tentativo di connessione al backend: {BACKEND_URL}")
+            response = requests.get(f"{BACKEND_URL}/materials/", timeout=10)
             if response.status_code == 200:
                 time.sleep(0.5)
                 return response.json()
             else:
                 st.error(f"Errore nel recupero dei materiali: {response.status_code}")
+                logger.error(f"Errore API: {response.status_code} - {response.text}")
                 return []
+        except requests.exceptions.Timeout:
+            st.error("Timeout nella connessione al backend")
+            logger.error("Timeout nella connessione al backend")
+            return []
         except Exception as e:
             st.error(f"Errore di connessione al backend: {str(e)}")
+            logger.error(f"Errore di connessione: {str(e)}")
             return []
 
 def validate_material_data(data):
