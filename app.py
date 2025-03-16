@@ -28,7 +28,8 @@ def get_materials_from_api():
         'density': mat['density'],
         'cost_per_kg': mat['cost_per_kg'],
         'min_layer_height': mat['min_layer_height'],
-        'max_layer_height': mat['max_layer_height']
+        'max_layer_height': mat['max_layer_height'],
+        'hourly_cost': mat.get('hourly_cost', 30)  # Aggiungi il costo orario
     } for mat in materials}
 
 def convert_stl_to_glb(stl_content):
@@ -133,7 +134,8 @@ def main():
                 'density': 'Densità (g/cm³)',
                 'cost_per_kg': 'Costo per kg (€)',
                 'min_layer_height': 'Altezza min. layer (mm)',
-                'max_layer_height': 'Altezza max. layer (mm)'
+                'max_layer_height': 'Altezza max. layer (mm)',
+                'hourly_cost': 'Costo orario (€)'
             }))
 
         # Modifica il selectbox per includere il costo
@@ -174,8 +176,20 @@ def main():
                 )
 
             # Caricamento file
-            st.subheader("Carica File STL")
+            st.subheader("Anteprima Modello")
             uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
+
+            # Inizializza il visualizzatore 3D con un div vuoto se non c'è un file
+            viewer_html = """
+            <div style="position: relative; width:100%;">
+                <div id="stl_viewer" style="width:100%; height:350px; border:1px solid #ddd; background:#f5f5f5;">
+                    <div style="display: flex; height: 100%; align-items: center; justify-content: center; color: #666;">
+                        Carica un file STL per visualizzare il modello 3D
+                    </div>
+                </div>
+            </div>
+            """
+            st.components.v1.html(viewer_html, height=380)
 
             if uploaded_file is not None:
                 try:
@@ -186,11 +200,7 @@ def main():
                     # Calcola costi per un singolo pezzo
                     calculations = calculate_print_cost(volume, material_props, layer_height)
 
-                    # Mostra risultati per pezzo singolo
-                    st.subheader("Risultati per Singolo Pezzo")
-
-                    # Visualizzazione 3D con Three.js subito dopo il caricamento del file
-                    st.markdown("##### Anteprima Modello")
+                    # Update viewer with the actual model
                     try:
                         # Converti il file STL in base64
                         file_content = uploaded_file.getvalue()
@@ -346,6 +356,24 @@ def main():
                         st.error(f"Errore nel visualizzatore 3D: {str(e)}")
                         logger.error(f"Errore dettagliato: {str(e)}")
 
+                    # Mostra risultati per pezzo singolo
+                    st.subheader("Risultati per Singolo Pezzo")
+
+                    # Metriche con dimensioni ridotte
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Volume", f"{calculations['volume_cm3']:.2f} cm³")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with col2:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Peso", f"{calculations['weight_kg']:.3f} kg")
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    with col3:
+                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+                        st.metric("Costo", f"€{calculations['total_cost']:.2f}")
+                        st.markdown('</div>', unsafe_allow_html=True)
+
                     # Applica stile CSS per ridurre la dimensione dei caratteri
                     st.markdown("""
                     <style>
@@ -363,20 +391,6 @@ def main():
                     </style>
                     """, unsafe_allow_html=True)
 
-                    # Metriche con dimensioni ridotte
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                        st.metric("Volume", f"{calculations['volume_cm3']:.2f} cm³")
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    with col2:
-                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                        st.metric("Peso", f"{calculations['weight_kg']:.3f} kg")
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    with col3:
-                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                        st.metric("Costo", f"€{calculations['total_cost']:.2f}")
-                        st.markdown('</div>', unsafe_allow_html=True)
 
                     # Mostra dimensioni con dimensioni ridotte
                     st.markdown("##### Dimensioni Oggetto")

@@ -4,6 +4,11 @@ from stl import mesh  # Modifica dell'import per numpy-stl
 import io
 import tempfile
 import os
+import logging
+
+# Configure logger
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def process_stl(file_content: bytes) -> tuple[float, NDArray, dict]:
     """
@@ -89,6 +94,10 @@ def calculate_print_cost(volume: float, material_properties: dict, layer_height:
     Returns:
         dict: Dizionario con i calcoli dei costi
     """
+    # Log dei parametri di input
+    logger.info(f"Calcolo costi con parametri: volume={volume}, layer_height={layer_height}")
+    logger.info(f"Proprietà materiale: {material_properties}")
+
     # Calcola peso in kg
     weight = volume * material_properties['density'] / 1000
 
@@ -100,9 +109,10 @@ def calculate_print_cost(volume: float, material_properties: dict, layer_height:
 
     # Usa il costo orario specifico del materiale
     hourly_cost = material_properties.get('hourly_cost', 30)  # EUR/ora
+    logger.info(f"Usando costo orario macchina: {hourly_cost} EUR/h")
     machine_cost = print_time * hourly_cost
 
-    return {
+    result = {
         'volume_cm3': round(volume, 2),
         'weight_kg': round(weight, 3),
         'material_cost': round(material_cost, 2),
@@ -110,3 +120,5 @@ def calculate_print_cost(volume: float, material_properties: dict, layer_height:
         'machine_cost': round(machine_cost, 2),
         'total_cost': round(material_cost + machine_cost, 2)
     }
+    logger.info(f"Risultati calcolo: {result}")
+    return result
