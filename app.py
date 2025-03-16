@@ -21,6 +21,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+
 def get_materials_from_api():
     """Recupera i materiali dal backend"""
     materials = fetch_materials()
@@ -180,10 +182,17 @@ def main():
             uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
 
             # Visualizzatore 3D con dimensioni quadrate e controlli aggiuntivi
+            model_data_base64 = ""
+            if uploaded_file:
+                try:
+                    model_data_base64 = base64.b64encode(uploaded_file.getvalue()).decode()
+                except Exception as e:
+                    st.error(f"Errore nel processare il file: {str(e)}")
+
             viewer_html = f"""
                 <div style="position: relative; width:500px; margin: 0 auto;">
                     <div id="stl_viewer" style="width:500px; height:500px; border:1px solid #ddd; background:#f5f5f5;">
-                        {"<div style='display: flex; height: 100%; align-items: center; justify-content: center; color: #666;'>Carica un file STL per visualizzare il modello 3D</div>" if not uploaded_file else ""}
+                        {'' if uploaded_file else '<div style="display: flex; height: 100%; align-items: center; justify-content: center; color: #666;">Carica un file STL per visualizzare il modello 3D</div>'}
                     </div>
                     <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;">
                         <button onclick="resetCamera()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
@@ -205,46 +214,32 @@ def main():
                         </button>
                     </div>
                 </div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js"></script>
+                <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js"></script>
+                <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/controls/OrbitControls.js"></script>
                 <script>
-                    // Carica Three.js e i file necessari in sequenza
-                    function loadScript(url, callback) {
-                        console.log('Caricamento script:', url);
-                        const script = document.createElement('script');
-                        script.type = 'text/javascript';
-                        script.src = url;
-                        script.onload = function() {
-                            console.log('Script caricato:', url);
-                            if (callback) callback();
-                        };
-                        script.onerror = function(e) {
-                            console.error('Errore nel caricamento dello script:', url, e);
-                            document.getElementById('stl_viewer').innerHTML = 
-                                '<div style="color: red; padding: 20px;">Errore nel caricamento delle librerie necessarie. Ricarica la pagina.</div>';
-                        };
-                        document.head.appendChild(script);
-                    }
+                    var scene, camera, renderer, controls, mesh;
+                    var MODEL_DATA = `{model_data_base64}`;
 
-                    // Variabili globali
-                    let camera, controls, scene, renderer;
-                    let mesh = null;
+                    window.onload = function() {
+                        init();
+                        animate();
+                    };
 
-                    // Setup base
-                    function initViewer() {
-                        try {
-                            console.log('Inizializzazione viewer...');
+                    function init() {
+                        scene = new THREE.Scene();
+                        scene.background = new THREE.Color(0xf5f5f5);
 
-                            const container = document.getElementById('stl_viewer');
-                            scene = new THREE.Scene();
-                            scene.background = new THREE.Color(0xf5f5f5);
+                        camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                        camera.position.set(100, 100, 100);
+                        camera.lookAt(0, 0, 0);
 
-                            camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-                            camera.position.set(100, 100, 100);
-                            camera.lookAt(0, 0, 0);
+                        renderer = new THREE.WebGLRenderer({antialias: true});
+                        renderer.setSize(500, 500);
+                        renderer.shadowMap.enabled = true;
 
-                            renderer = new THREE.WebGLRenderer({antialias: true});
-                            renderer.setSize(500, 500);
-                            renderer.shadowMap.enabled = true;
-                            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                        var container = document.getElementById('stl_viewer');
+                        if (container) {
                             container.innerHTML = '';
                             container.appendChild(renderer.domElement);
 
@@ -257,100 +252,74 @@ def main():
                             controls.maxPolarAngle = Math.PI;
 
                             setupLights();
-                            loadModel();
-                            animate();
-
-                            console.log('Viewer inizializzato con successo');
-                        } catch (error) {
-                            console.error('Errore nel setup del viewer:', error);
-                            document.getElementById('stl_viewer').innerHTML = 
-                                '<div style="color: red; padding: 20px;">Errore nell\'inizializzazione del visualizzatore: ' + error.message + '</div>';
+                            if (MODEL_DATA) {
+                                loadModel();
+                            }
                         }
                     }
 
                     function setupLights() {
-                        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
-                        scene.add(ambientLight);
+                        var ambient = new THREE.AmbientLight(0x404040, 0.8);
+                        scene.add(ambient);
 
-                        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
-                        mainLight.position.set(2, 2, 1).normalize();
-                        mainLight.castShadow = true;
-                        scene.add(mainLight);
+                        var main = new THREE.DirectionalLight(0xffffff, 1.0);
+                        main.position.set(2, 2, 1).normalize();
+                        scene.add(main);
 
-                        const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
-                        fillLight.position.set(-1, 1, 2).normalize();
-                        scene.add(fillLight);
+                        var fill = new THREE.DirectionalLight(0xffffff, 0.5);
+                        fill.position.set(-1, 1, 2).normalize();
+                        scene.add(fill);
 
-                        const bottomLight = new THREE.DirectionalLight(0xffffff, 0.3);
-                        bottomLight.position.set(0, -1, 0).normalize();
-                        scene.add(bottomLight);
+                        var bottom = new THREE.DirectionalLight(0xffffff, 0.3);
+                        bottom.position.set(0, -1, 0).normalize();
+                        scene.add(bottom);
                     }
 
                     function loadModel() {
-                        const modelData = `""" + (base64.b64encode(uploaded_file.getvalue()).decode() if uploaded_file else '') + """`;
-
-                        if (!modelData) {
-                            console.log('Nessun modello da caricare');
-                            return;
-                        }
+                        if (!MODEL_DATA) return;
 
                         try {
-                            console.log('Inizio caricamento modello STL');
-
-                            // Rimuovi modello precedente se esiste
                             if (mesh) {
                                 scene.remove(mesh);
                                 mesh.geometry.dispose();
                                 mesh.material.dispose();
                             }
 
-                            const loader = new THREE.STLLoader();
-                            const decodedData = atob(modelData);
-                            console.log('Lunghezza dati decodificati:', decodedData.length);
+                            var loader = new THREE.STLLoader();
+                            var decoded = atob(MODEL_DATA);
+                            var buffer = new Uint8Array(decoded.length);
 
-                            const buffer = new Uint8Array(decodedData.length);
-                            for (let i = 0; i < decodedData.length; i++) {
-                                buffer[i] = decodedData.charCodeAt(i);
+                            for (var i = 0; i < decoded.length; i++) {
+                                buffer[i] = decoded.charCodeAt(i);
                             }
 
-                            const geometry = loader.parse(buffer.buffer);
-                            console.log('STL parsato con successo');
-
+                            var geometry = loader.parse(buffer.buffer);
                             geometry.computeBoundingBox();
-                            const boundingBox = geometry.boundingBox;
-                            const center = new THREE.Vector3();
-                            boundingBox.getCenter(center);
-                            console.log('Centro modello:', center);
 
-                            const size = new THREE.Vector3();
-                            boundingBox.getSize(size);
-                            console.log('Dimensioni modello:', size);
+                            var center = new THREE.Vector3();
+                            geometry.boundingBox.getCenter(center);
 
-                            const maxDim = Math.max(size.x, size.y, size.z);
-                            const scale = 100 / maxDim;
+                            var size = new THREE.Vector3();
+                            geometry.boundingBox.getSize(size);
+                            var maxDim = Math.max(size.x, size.y, size.z);
+                            var scale = 100 / maxDim;
 
-                            const material = new THREE.MeshPhongMaterial({
+                            var material = new THREE.MeshPhongMaterial({
                                 color: 0x1E88E5,
                                 shininess: 50,
-                                specular: 0x444444,
-                                flatShading: false
+                                specular: 0x444444
                             });
 
                             mesh = new THREE.Mesh(geometry, material);
                             mesh.castShadow = true;
                             mesh.receiveShadow = true;
-
                             mesh.position.sub(center);
                             mesh.scale.multiplyScalar(scale);
-
                             scene.add(mesh);
-                            console.log('Modello aggiunto alla scena');
 
                             resetCamera();
                         } catch (error) {
                             console.error('Errore nel caricamento del modello:', error);
-                            document.getElementById('stl_viewer').innerHTML = 
-                                '<div style="color: red; padding: 20px;">Errore nel caricamento del modello: ' + error.message + '</div>';
                         }
                     }
 
@@ -362,48 +331,37 @@ def main():
                         }
                     }
 
-                    // Funzioni di controllo camera
                     window.resetCamera = function() {
                         if (camera && controls) {
                             camera.position.set(100, 100, 100);
                             camera.lookAt(0, 0, 0);
                             controls.reset();
                         }
-                    }
+                    };
 
                     window.zoomIn = function() {
                         if (camera) {
                             camera.position.multiplyScalar(0.8);
                         }
-                    }
+                    };
 
                     window.zoomOut = function() {
                         if (camera) {
                             camera.position.multiplyScalar(1.2);
                         }
-                    }
+                    };
 
                     window.rotateLeft = function() {
                         if (controls) {
                             controls.rotateLeft(Math.PI / 6);
                         }
-                    }
+                    };
 
                     window.rotateRight = function() {
                         if (controls) {
                             controls.rotateLeft(-Math.PI / 6);
                         }
-                    }
-
-                    // Carica Three.js e inizializza il viewer
-                    loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js', function() {
-                        loadScript('https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js', function() {
-                            loadScript('https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/controls/OrbitControls.js', function() {
-                                console.log('Tutti gli script caricati, inizializzazione viewer...');
-                                initViewer();
-                            });
-                        });
-                    });
+                    };
                 </script>
             """
 
