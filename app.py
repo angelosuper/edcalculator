@@ -21,8 +21,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
-
 def get_materials_from_api():
     """Recupera i materiali dal backend"""
     materials = fetch_materials()
@@ -110,7 +108,7 @@ def main():
         st.markdown("---")
         page = st.radio(
             "Seleziona una sezione:",
-            ["🧮 Calcolo Costi", "💰 Preventivo", "⚙️ Gestione Materiali"],
+            ["🧮 Calcolo Costi", "⚙️ Gestione Materiali"],
             format_func=lambda x: x.split(" ", 1)[1]
         )
 
@@ -181,191 +179,153 @@ def main():
             st.subheader("Anteprima Modello")
             uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
 
-            # Visualizzatore 3D con dimensioni quadrate e controlli aggiuntivi
-            model_data_base64 = ""
-            if uploaded_file:
-                try:
-                    model_data_base64 = base64.b64encode(uploaded_file.getvalue()).decode()
-                except Exception as e:
-                    st.error(f"Errore nel processare il file: {str(e)}")
-
+            # Visualizzatore 3D
             viewer_html = f"""
-                <div style="position: relative; width:500px; margin: 0 auto;">
-                    <div id="stl_viewer" style="width:500px; height:500px; border:1px solid #ddd; background:#f5f5f5;">
-                        {'' if uploaded_file else '<div style="display: flex; height: 100%; align-items: center; justify-content: center; color: #666;">Carica un file STL per visualizzare il modello 3D</div>'}
-                    </div>
-                    <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;">
-                        <button onclick="resetCamera()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                            🔄 Reset
-                        </button>
-                        <button onclick="zoomIn()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                            🔍+ Zoom
-                        </button>
-                        <button onclick="zoomOut()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                            🔍- Zoom
-                        </button>
-                    </div>
-                    <div style="position: absolute; bottom: 10px; left: 10px; display: flex; gap: 5px;">
-                        <button onclick="rotateLeft()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                            ↶ Ruota Sx
-                        </button>
-                        <button onclick="rotateRight()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                            ↷ Ruota Dx
-                        </button>
-                    </div>
+            <div style="position: relative; width:100%;">
+                <div id="stl_viewer" style="width:100%; height:350px; border:1px solid #ddd; background:#f5f5f5;">
+                    {"<div style='display: flex; height: 100%; align-items: center; justify-content: center; color: #666;'>Carica un file STL per visualizzare il modello 3D</div>" if not uploaded_file else ""}
                 </div>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js"></script>
-                <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js"></script>
-                <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/controls/OrbitControls.js"></script>
-                <script>
-                    var scene, camera, renderer, controls, mesh;
-                    var MODEL_DATA = `{model_data_base64}`;
+                <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;">
+                    <button onclick="resetCamera()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                        🔄 Reset
+                    </button>
+                    <button onclick="zoomIn()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                        🔍+ Zoom In
+                    </button>
+                    <button onclick="zoomOut()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                        🔍- Zoom Out
+                    </button>
+                </div>
+            </div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r113/three.min.js"></script>
+            <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/loaders/STLLoader.js"></script>
+            <script src="https://cdn.rawgit.com/mrdoob/three.js/r113/examples/js/controls/OrbitControls.js"></script>
+            <script>
+                let camera, controls;
 
-                    window.onload = function() {
-                        init();
-                        animate();
-                    };
+                // Verifica che Three.js sia caricato
+                if (typeof THREE === 'undefined') {{
+                    document.getElementById('stl_viewer').innerHTML = 
+                        '<div style="color: red; padding: 20px;">Three.js non è stato caricato</div>';
+                    throw new Error('Three.js non è stato caricato');
+                }}
 
-                    function init() {
-                        scene = new THREE.Scene();
-                        scene.background = new THREE.Color(0xf5f5f5);
+                // Setup base
+                const container = document.getElementById('stl_viewer');
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0xf5f5f5);
 
-                        camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-                        camera.position.set(100, 100, 100);
-                        camera.lookAt(0, 0, 0);
+                camera = new THREE.PerspectiveCamera(
+                    75, container.clientWidth / container.clientHeight, 0.1, 1000
+                );
+                camera.position.set(100, 100, 100);
+                camera.lookAt(0, 0, 0);
 
-                        renderer = new THREE.WebGLRenderer({antialias: true});
-                        renderer.setSize(500, 500);
-                        renderer.shadowMap.enabled = true;
+                const renderer = new THREE.WebGLRenderer({{antialias: true}});
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(renderer.domElement);
 
-                        var container = document.getElementById('stl_viewer');
-                        if (container) {
-                            container.innerHTML = '';
-                            container.appendChild(renderer.domElement);
+                // Aggiungi controlli orbitali
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.screenSpacePanning = true;
+                controls.minDistance = 50;
+                controls.maxDistance = 300;
+                controls.maxPolarAngle = Math.PI;
 
-                            controls = new THREE.OrbitControls(camera, renderer.domElement);
-                            controls.enableDamping = true;
-                            controls.dampingFactor = 0.05;
-                            controls.screenSpacePanning = true;
-                            controls.minDistance = 50;
-                            controls.maxDistance = 300;
-                            controls.maxPolarAngle = Math.PI;
+                // Sistema di illuminazione migliorato
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                scene.add(ambientLight);
 
-                            setupLights();
-                            if (MODEL_DATA) {
-                                loadModel();
-                            }
-                        }
-                    }
+                // Luce principale dall'alto
+                const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                mainLight.position.set(1, 2, 1).normalize();
+                scene.add(mainLight);
 
-                    function setupLights() {
-                        var ambient = new THREE.AmbientLight(0x404040, 0.8);
-                        scene.add(ambient);
+                // Luce di riempimento frontale
+                const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                fillLight.position.set(-1, 0, 2).normalize();
+                scene.add(fillLight);
 
-                        var main = new THREE.DirectionalLight(0xffffff, 1.0);
-                        main.position.set(2, 2, 1).normalize();
-                        scene.add(main);
+                // Luce dal basso per dettagli
+                const bottomLight = new THREE.DirectionalLight(0xffffff, 0.2);
+                bottomLight.position.set(0, -1, 0).normalize();
+                scene.add(bottomLight);
 
-                        var fill = new THREE.DirectionalLight(0xffffff, 0.5);
-                        fill.position.set(-1, 1, 2).normalize();
-                        scene.add(fill);
+                // Funzioni di controllo camera
+                window.resetCamera = function() {{
+                    camera.position.set(100, 100, 100);
+                    camera.lookAt(0, 0, 0);
+                    controls.reset();
+                }}
 
-                        var bottom = new THREE.DirectionalLight(0xffffff, 0.3);
-                        bottom.position.set(0, -1, 0).normalize();
-                        scene.add(bottom);
-                    }
+                window.zoomIn = function() {{
+                    camera.position.multiplyScalar(0.8);
+                }}
 
-                    function loadModel() {
-                        if (!MODEL_DATA) return;
+                window.zoomOut = function() {{
+                    camera.position.multiplyScalar(1.2);
+                }}
 
-                        try {
-                            if (mesh) {
-                                scene.remove(mesh);
-                                mesh.geometry.dispose();
-                                mesh.material.dispose();
-                            }
+                {'''
+                // Carica il modello STL
+                const loader = new THREE.STLLoader();
+                const modelData = atob("''' + (base64.b64encode(uploaded_file.getvalue()).decode() if uploaded_file else '') + '''");
+                const buffer = new Uint8Array(modelData.length);
+                for (let i = 0; i < modelData.length; i++) {
+                    buffer[i] = modelData.charCodeAt(i);
+                }
 
-                            var loader = new THREE.STLLoader();
-                            var decoded = atob(MODEL_DATA);
-                            var buffer = new Uint8Array(decoded.length);
+                try {
+                    const geometry = loader.parse(buffer.buffer);
+                    const material = new THREE.MeshPhongMaterial({
+                        color: 0x1E88E5,
+                        shininess: 30,
+                        specular: 0x111111
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
 
-                            for (var i = 0; i < decoded.length; i++) {
-                                buffer[i] = decoded.charCodeAt(i);
-                            }
+                    // Auto-centraggio e scala
+                    geometry.computeBoundingBox();
+                    const center = new THREE.Vector3();
+                    geometry.boundingBox.getCenter(center);
+                    mesh.position.sub(center);
 
-                            var geometry = loader.parse(buffer.buffer);
-                            geometry.computeBoundingBox();
+                    // Calcola scala appropriata
+                    const size = new THREE.Vector3();
+                    geometry.boundingBox.getSize(size);
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 100 / maxDim;
+                    mesh.scale.multiplyScalar(scale);
 
-                            var center = new THREE.Vector3();
-                            geometry.boundingBox.getCenter(center);
+                    scene.add(mesh);
+                } catch (error) {
+                    console.error('Errore nel parsing STL:', error);
+                    container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello</div>';
+                }
+                ''' if uploaded_file else ""}
 
-                            var size = new THREE.Vector3();
-                            geometry.boundingBox.getSize(size);
-                            var maxDim = Math.max(size.x, size.y, size.z);
-                            var scale = 100 / maxDim;
+                // Loop di rendering
+                function animate() {{
+                    requestAnimationFrame(animate);
+                    controls.update();
+                    renderer.render(scene, camera);
+                }}
+                animate();
 
-                            var material = new THREE.MeshPhongMaterial({
-                                color: 0x1E88E5,
-                                shininess: 50,
-                                specular: 0x444444
-                            });
-
-                            mesh = new THREE.Mesh(geometry, material);
-                            mesh.castShadow = true;
-                            mesh.receiveShadow = true;
-                            mesh.position.sub(center);
-                            mesh.scale.multiplyScalar(scale);
-                            scene.add(mesh);
-
-                            resetCamera();
-                        } catch (error) {
-                            console.error('Errore nel caricamento del modello:', error);
-                        }
-                    }
-
-                    function animate() {
-                        requestAnimationFrame(animate);
-                        if (controls) controls.update();
-                        if (renderer && scene && camera) {
-                            renderer.render(scene, camera);
-                        }
-                    }
-
-                    window.resetCamera = function() {
-                        if (camera && controls) {
-                            camera.position.set(100, 100, 100);
-                            camera.lookAt(0, 0, 0);
-                            controls.reset();
-                        }
-                    };
-
-                    window.zoomIn = function() {
-                        if (camera) {
-                            camera.position.multiplyScalar(0.8);
-                        }
-                    };
-
-                    window.zoomOut = function() {
-                        if (camera) {
-                            camera.position.multiplyScalar(1.2);
-                        }
-                    };
-
-                    window.rotateLeft = function() {
-                        if (controls) {
-                            controls.rotateLeft(Math.PI / 6);
-                        }
-                    };
-
-                    window.rotateRight = function() {
-                        if (controls) {
-                            controls.rotateLeft(-Math.PI / 6);
-                        }
-                    };
-                </script>
+                // Gestione ridimensionamento
+                window.addEventListener('resize', function() {{
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+                    camera.aspect = width / height;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(width, height);
+                }});
+            </script>
             """
 
-            st.components.v1.html(viewer_html, height=520)
+            st.components.v1.html(viewer_html, height=380)
 
             if uploaded_file is not None:
                 try:
@@ -460,130 +420,6 @@ def main():
                 except Exception as e:
                     logger.error(f"Errore nel processare il file: {str(e)}")
                     st.error(f"Errore nel processare il file: {str(e)}")
-
-    elif page == "💰 Preventivo":
-        st.title("Calcolo Preventivo")
-
-        # Recupera materiali dal backend
-        materials_data = get_materials_from_api()
-
-        if not materials_data:
-            st.warning("Nessun materiale disponibile. Aggiungi materiali nella sezione 'Gestione Materiali'.")
-            return
-
-        # Selezione materiale e quantità
-        col1, col2 = st.columns(2)
-
-        with col1:
-            material_options = {
-                f"{name} (€{props['cost_per_kg']}/kg)": name 
-                for name, props in materials_data.items()
-            }
-            selected_material_display = st.selectbox(
-                "Seleziona materiale",
-                options=list(material_options.keys())
-            )
-            selected_material = material_options[selected_material_display]
-            material_props = materials_data.get(selected_material)
-
-        with col2:
-            quantity = st.number_input(
-                "Quantità pezzi",
-                min_value=1,
-                value=1,
-                step=1,
-                help="Inserisci il numero di pezzi da produrre"
-            )
-
-        # Caricamento file STL
-        uploaded_file = st.file_uploader("Carica il modello STL", type=['stl'])
-
-        if uploaded_file is not None:
-            try:
-                # Processa file STL
-                volume, vertices, dimensions = process_stl(uploaded_file.getvalue())
-
-                # Calcola costi per un singolo pezzo
-                base_calculations = calculate_print_cost(volume, material_props, 0.2)  # layer height predefinito
-
-                # Costi aggiuntivi
-                st.subheader("Costi Aggiuntivi")
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    packaging_cost = st.number_input(
-                        "Costo imballaggio per pezzo (€)",
-                        min_value=0.0,
-                        value=1.0,
-                        step=0.5,
-                        help="Costo dell'imballaggio per singolo pezzo"
-                    )
-
-                with col2:
-                    shipping_cost = st.number_input(
-                        "Costo spedizione totale (€)",
-                        min_value=0.0,
-                        value=10.0,
-                        step=1.0,
-                        help="Costo totale della spedizione"
-                    )
-
-                # Calcolo totale
-                single_piece_cost = base_calculations['total_cost'] + packaging_cost
-                total_pieces_cost = single_piece_cost * quantity
-                total_cost = total_pieces_cost + shipping_cost
-
-                # Visualizzazione risultati
-                st.subheader("Riepilogo Preventivo")
-
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-                    st.metric(
-                        "Costo per pezzo",
-                        f"€{single_piece_cost:.2f}",
-                        help=f"""
-                        Stampa: €{base_calculations['total_cost']:.2f}
-                        Imballaggio: €{packaging_cost:.2f}
-                        """
-                    )
-
-                with col2:
-                    st.metric(
-                        "Costo totale pezzi",
-                        f"€{total_pieces_cost:.2f}",
-                        help=f"Costo per pezzo × {quantity} pezzi"
-                    )
-
-                with col3:
-                    st.metric(
-                        "Totale con spedizione",
-                        f"€{total_cost:.2f}",
-                        help=f"Costo totale pezzi + spedizione (€{shipping_cost:.2f})"
-                    )
-
-                # Dettagli calcolo
-                with st.expander("📊 Dettagli Calcolo"):
-                    st.markdown(f"""
-                    ### Dettaglio costi per pezzo
-                    - Costo materiale: €{base_calculations['material_cost']:.2f}
-                    - Costo macchina: €{base_calculations['machine_cost']:.2f}
-                    - Costo imballaggio: €{packaging_cost:.2f}
-
-                    ### Dettagli prodotto
-                    - Volume: {base_calculations['volume_cm3']:.2f} cm³
-                    - Peso: {base_calculations['weight_kg']:.3f} kg
-                    - Tempo di stampa: {base_calculations['tempo_stampa']:.1f} ore
-
-                    ### Riepilogo ordine
-                    - Quantità: {quantity} pezzi
-                    - Costo totale pezzi: €{total_pieces_cost:.2f}
-                    - Costo spedizione: €{shipping_cost:.2f}
-                    - **Totale preventivo: €{total_cost:.2f}**
-                    """)
-
-            except Exception as e:
-                st.error(f"Errore nel processare il file: {str(e)}")
 
     elif page == "⚙️ Gestione Materiali":
         materials_manager_page()
