@@ -181,8 +181,8 @@ def main():
 
             # Visualizzatore 3D
             viewer_html = f"""
-            <div style="position: relative; width:100%; max-width:500px; margin:0 auto;">
-                <div id="stl_viewer" style="width:100%; height:500px; border:1px solid #ddd; background:#f5f5f5;">
+            <div style="position: relative; width:100%; max-width:600px; margin:0 auto;">
+                <div id="stl_viewer" style="width:100%; height:600px; border:1px solid #ddd; background:#f5f5f5;">
                     {"<div style='display: flex; height: 100%; align-items: center; justify-content: center; color: #666;'>Carica un file STL per visualizzare il modello 3D</div>" if not uploaded_file else ""}
                 </div>
                 <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;">
@@ -222,7 +222,7 @@ def main():
                 camera.lookAt(0, 0, 0);
 
                 const renderer = new THREE.WebGLRenderer({{antialias: true}});
-                renderer.setSize(500, 500);  // Dimensioni fisse quadrate
+                renderer.setSize(600, 600);  // Dimensioni fisse quadrate
                 renderer.shadowMap.enabled = true;  // Abilita le ombre
                 renderer.shadowMap.type = THREE.PCFSoftShadowMap;  // Ombre morbide
                 container.appendChild(renderer.domElement);
@@ -241,7 +241,7 @@ def main():
                 scene.add(ambientLight);
 
                 // Luce principale dall'alto-destra
-                const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);  // Aumentata intensità
+                const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
                 mainLight.position.set(2, 2, 1).normalize();
                 mainLight.castShadow = true;
                 scene.add(mainLight);
@@ -332,7 +332,7 @@ def main():
             </script>
             """
 
-            st.components.v1.html(viewer_html, height=520)  # Aumentata altezza per contenere il visualizzatore quadrato
+            st.components.v1.html(viewer_html, height=620)  # Aumentata altezza per contenere il visualizzatore quadrato e i controlli
 
             if uploaded_file is not None:
                 try:
