@@ -181,8 +181,8 @@ def main():
 
             # Visualizzatore 3D
             viewer_html = f"""
-            <div style="position: relative; width:100%;">
-                <div id="stl_viewer" style="width:100%; height:350px; border:1px solid #ddd; background:#f5f5f5;">
+            <div style="position: relative; width:100%; max-width:500px; margin:0 auto;">
+                <div id="stl_viewer" style="width:100%; height:500px; border:1px solid #ddd; background:#f5f5f5;">
                     {"<div style='display: flex; height: 100%; align-items: center; justify-content: center; color: #666;'>Carica un file STL per visualizzare il modello 3D</div>" if not uploaded_file else ""}
                 </div>
                 <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;">
@@ -216,13 +216,15 @@ def main():
                 scene.background = new THREE.Color(0xf5f5f5);
 
                 camera = new THREE.PerspectiveCamera(
-                    75, container.clientWidth / container.clientHeight, 0.1, 1000
+                    75, 1, 0.1, 1000  // aspect ratio 1:1 per vista quadrata
                 );
                 camera.position.set(100, 100, 100);
                 camera.lookAt(0, 0, 0);
 
                 const renderer = new THREE.WebGLRenderer({{antialias: true}});
-                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setSize(500, 500);  // Dimensioni fisse quadrate
+                renderer.shadowMap.enabled = true;  // Abilita le ombre
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;  // Ombre morbide
                 container.appendChild(renderer.domElement);
 
                 // Aggiungi controlli orbitali
@@ -235,23 +237,29 @@ def main():
                 controls.maxPolarAngle = Math.PI;
 
                 // Sistema di illuminazione migliorato
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.8);  // Aumentata intensità
                 scene.add(ambientLight);
 
-                // Luce principale dall'alto
-                const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                mainLight.position.set(1, 2, 1).normalize();
+                // Luce principale dall'alto-destra
+                const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);  // Aumentata intensità
+                mainLight.position.set(2, 2, 1).normalize();
+                mainLight.castShadow = true;
                 scene.add(mainLight);
 
                 // Luce di riempimento frontale
-                const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
                 fillLight.position.set(-1, 0, 2).normalize();
                 scene.add(fillLight);
 
                 // Luce dal basso per dettagli
-                const bottomLight = new THREE.DirectionalLight(0xffffff, 0.2);
+                const bottomLight = new THREE.DirectionalLight(0xffffff, 0.3);
                 bottomLight.position.set(0, -1, 0).normalize();
                 scene.add(bottomLight);
+
+                // Luce posteriore per evidenziare i bordi
+                const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                backLight.position.set(-1, 1, -2).normalize();
+                scene.add(backLight);
 
                 // Funzioni di controllo camera
                 window.resetCamera = function() {{
@@ -281,10 +289,13 @@ def main():
                     const geometry = loader.parse(buffer.buffer);
                     const material = new THREE.MeshPhongMaterial({
                         color: 0x1E88E5,
-                        shininess: 30,
-                        specular: 0x111111
+                        shininess: 50,  // Aumentato per più riflessi
+                        specular: 0x444444,  // Colore dei riflessi più intenso
+                        flatShading: false  // Shading più smooth
                     });
                     const mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
 
                     // Auto-centraggio e scala
                     geometry.computeBoundingBox();
@@ -316,16 +327,12 @@ def main():
 
                 // Gestione ridimensionamento
                 window.addEventListener('resize', function() {{
-                    const width = container.clientWidth;
-                    const height = container.clientHeight;
-                    camera.aspect = width / height;
                     camera.updateProjectionMatrix();
-                    renderer.setSize(width, height);
                 }});
             </script>
             """
 
-            st.components.v1.html(viewer_html, height=380)
+            st.components.v1.html(viewer_html, height=520)  # Aumentata altezza per contenere il visualizzatore quadrato
 
             if uploaded_file is not None:
                 try:
