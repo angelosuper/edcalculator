@@ -351,26 +351,22 @@ def main():
                 controls.maxPolarAngle = Math.PI;
 
                 // Sistema di illuminazione migliorato
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.8);  // Aumentata intensità
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
                 scene.add(ambientLight);
 
-                // Luce principale dall'alto-destra
-                const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);  // Aumentata intensità
+                const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
                 mainLight.position.set(2, 2, 1).normalize();
                 mainLight.castShadow = true;
                 scene.add(mainLight);
 
-                // Luce di riempimento frontale
                 const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
                 fillLight.position.set(-1, 0, 2).normalize();
                 scene.add(fillLight);
 
-                // Luce dal basso per dettagli
                 const bottomLight = new THREE.DirectionalLight(0xffffff, 0.3);
                 bottomLight.position.set(0, -1, 0).normalize();
                 scene.add(bottomLight);
 
-                // Luce posteriore per evidenziare i bordi
                 const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
                 backLight.position.set(-1, 1, -2).normalize();
                 scene.add(backLight);
@@ -389,55 +385,16 @@ def main():
                 window.zoomOut = function() {
                     camera.position.multiplyScalar(1.2);
                 }
-            """
 
-            model_loader_script = """
-                // Carica il modello STL
-                const loader = new THREE.STLLoader();
-                const modelData = atob("MODEL_BASE64");
-                const buffer = new Uint8Array(modelData.length);
-                for (let i = 0; i < modelData.length; i++) {
-                    buffer[i] = modelData.charCodeAt(i);
+                function clearScene() {
+                    if (mesh) {
+                        scene.remove(mesh);
+                        mesh.geometry.dispose();
+                        mesh.material.dispose();
+                        mesh = null;
+                    }
                 }
 
-                try {
-                    const geometry = loader.parse(buffer.buffer);
-                    const material = new THREE.MeshPhongMaterial({
-                        color: 0x1E88E5,
-                        shininess: 50,  // Aumentato per più riflessi
-                        specular: 0x444444,  // Colore dei riflessi più intenso
-                        flatShading: false  // Shading più smooth
-                    });
-                    mesh = new THREE.Mesh(geometry, material);
-                    mesh.castShadow = true;
-                    mesh.receiveShadow = true;
-
-                    // Auto-centraggio e scala
-                    geometry.computeBoundingBox();
-                    const center = new THREE.Vector3();
-                    geometry.boundingBox.getCenter(center);
-                    mesh.position.sub(center);
-
-                    // Calcola scala appropriata
-                    const size = new THREE.Vector3();
-                    geometry.boundingBox.getSize(size);
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const scale = 100 / maxDim;
-                    mesh.scale.multiplyScalar(scale);
-
-                    scene.add(mesh);
-
-                    // Aggiungi evento double click per la rotazione
-                    container.addEventListener('dblclick', () => {
-                        spinAnimation();
-                    });
-                } catch (error) {
-                    console.error('Errore nel parsing STL:', error);
-                    container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello</div>';
-                }
-            """
-
-            animation_script = """
                 // Loop di rendering
                 function animate() {
                     requestAnimationFrame(animate);
@@ -453,11 +410,67 @@ def main():
             </script>
             """
 
+            model_loader_script = """
+            <script>
+            try {
+                console.log("Starting model loading...");
+                const loader = new THREE.STLLoader();
+                clearScene();  // Pulisci la scena prima di caricare un nuovo modello
+
+                const modelData = atob("MODEL_BASE64");
+                const buffer = new Uint8Array(modelData.length);
+                for (let i = 0; i < modelData.length; i++) {
+                    buffer[i] = modelData.charCodeAt(i);
+                }
+
+                console.log("Parsing STL data...");
+                const geometry = loader.parse(buffer.buffer);
+                console.log("STL parsed successfully");
+
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0x1E88E5,
+                    shininess: 50,
+                    specular: 0x444444,
+                    flatShading: false
+                });
+                mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+
+                // Auto-centraggio e scala
+                geometry.computeBoundingBox();
+                const center = new THREE.Vector3();
+                geometry.boundingBox.getCenter(center);
+                mesh.position.sub(center);
+
+                // Calcola scala appropriata
+                const size = new THREE.Vector3();
+                geometry.boundingBox.getSize(size);
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 100 / maxDim;
+                mesh.scale.multiplyScalar(scale);
+
+                scene.add(mesh);
+                console.log("Model added to scene successfully");
+
+                // Aggiungi evento double click per la rotazione
+                container.addEventListener('dblclick', () => {
+                    spinAnimation();
+                });
+
+                showEasterEggMessage('👋 Prova il doppio click per far girare il modello!');
+            } catch (error) {
+                console.error('Errore nel parsing STL:', error);
+                container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello</div>';
+            }
+            </script>
+            """
+
             if uploaded_file:
                 model_base64 = base64.b64encode(uploaded_file.getvalue()).decode()
-                complete_viewer_html = base_viewer_html + model_loader_script.replace('MODEL_BASE64', model_base64) + animation_script
+                complete_viewer_html = base_viewer_html + model_loader_script.replace('MODEL_BASE64', model_base64)
             else:
-                complete_viewer_html = base_viewer_html + animation_script
+                complete_viewer_html = base_viewer_html
 
             st.components.v1.html(complete_viewer_html, height=520)
 
