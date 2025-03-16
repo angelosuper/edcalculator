@@ -177,37 +177,13 @@ def main():
 
             # Caricamento file
             st.subheader("Anteprima Modello")
-
-            # Inizializza session_state per il file se non esiste
-            if 'uploaded_file' not in st.session_state:
-                st.session_state.uploaded_file = None
-
-            # Pulsante per rimuovere il file se presente
-            if st.session_state.uploaded_file is not None:
-                if st.button("🗑️ Rimuovi file corrente"):
-                    st.session_state.uploaded_file = None
-                    st.rerun()
-
-            # File uploader solo se non c'è un file salvato
-            if st.session_state.uploaded_file is None:
-                uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
-                if uploaded_file is not None:
-                    # Salva il file nella session state
-                    file_contents = uploaded_file.getvalue()
-                    st.session_state.uploaded_file = file_contents
-                    st.rerun()
-            else:
-                # Usa il file dalla session state
-                uploaded_file = io.BytesIO(st.session_state.uploaded_file)
-                uploaded_file.name = "modello.stl"  # Necessario per il file_uploader
+            uploaded_file = st.file_uploader("Scegli un file STL", type=['stl'])
 
             # Visualizzatore 3D
-            base_viewer_html = """
+            viewer_html = f"""
             <div style="position: relative; width:100%; max-width:500px; margin:0 auto;">
                 <div id="stl_viewer" style="width:100%; height:500px; border:1px solid #ddd; background:#f5f5f5;">
-                    <div style='display: flex; height: 100%; align-items: center; justify-content: center; color: #666;'>
-                        Carica un file STL per visualizzare il modello 3D
-                    </div>
+                    {"<div style='display: flex; height: 100%; align-items: center; justify-content: center; color: #666;'>Carica un file STL per visualizzare il modello 3D</div>" if not uploaded_file else ""}
                 </div>
                 <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;">
                     <button onclick="resetCamera()" style="padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
@@ -228,11 +204,11 @@ def main():
                 let camera, controls;
 
                 // Verifica che Three.js sia caricato
-                if (typeof THREE === 'undefined') {
+                if (typeof THREE === 'undefined') {{
                     document.getElementById('stl_viewer').innerHTML = 
                         '<div style="color: red; padding: 20px;">Three.js non è stato caricato</div>';
                     throw new Error('Three.js non è stato caricato');
-                }
+                }}
 
                 // Setup base
                 const container = document.getElementById('stl_viewer');
@@ -245,7 +221,7 @@ def main():
                 camera.position.set(100, 100, 100);
                 camera.lookAt(0, 0, 0);
 
-                const renderer = new THREE.WebGLRenderer({antialias: true});
+                const renderer = new THREE.WebGLRenderer({{antialias: true}});
                 renderer.setSize(500, 500);  // Dimensioni fisse quadrate
                 renderer.shadowMap.enabled = true;  // Abilita le ombre
                 renderer.shadowMap.type = THREE.PCFSoftShadowMap;  // Ombre morbide
@@ -286,25 +262,24 @@ def main():
                 scene.add(backLight);
 
                 // Funzioni di controllo camera
-                window.resetCamera = function() {
+                window.resetCamera = function() {{
                     camera.position.set(100, 100, 100);
                     camera.lookAt(0, 0, 0);
                     controls.reset();
-                }
+                }}
 
-                window.zoomIn = function() {
+                window.zoomIn = function() {{
                     camera.position.multiplyScalar(0.8);
-                }
+                }}
 
-                window.zoomOut = function() {
+                window.zoomOut = function() {{
                     camera.position.multiplyScalar(1.2);
-                }
-            """
+                }}
 
-            model_loader_script = """
+                {'''
                 // Carica il modello STL
                 const loader = new THREE.STLLoader();
-                const modelData = atob("MODEL_BASE64");
+                const modelData = atob("''' + (base64.b64encode(uploaded_file.getvalue()).decode() if uploaded_file else '') + '''");
                 const buffer = new Uint8Array(modelData.length);
                 for (let i = 0; i < modelData.length; i++) {
                     buffer[i] = modelData.charCodeAt(i);
@@ -340,31 +315,24 @@ def main():
                     console.error('Errore nel parsing STL:', error);
                     container.innerHTML = '<div style="color: red; padding: 20px;">Errore nel caricamento del modello</div>';
                 }
-            """
+                ''' if uploaded_file else ""}
 
-            animation_script = """
                 // Loop di rendering
-                function animate() {
+                function animate() {{
                     requestAnimationFrame(animate);
                     controls.update();
                     renderer.render(scene, camera);
-                }
+                }}
                 animate();
 
                 // Gestione ridimensionamento
-                window.addEventListener('resize', function() {
+                window.addEventListener('resize', function() {{
                     camera.updateProjectionMatrix();
-                });
+                }});
             </script>
             """
 
-            if uploaded_file:
-                model_base64 = base64.b64encode(uploaded_file.getvalue()).decode()
-                complete_viewer_html = base_viewer_html + model_loader_script.replace('MODEL_BASE64', model_base64) + animation_script
-            else:
-                complete_viewer_html = base_viewer_html + animation_script
-
-            st.components.v1.html(complete_viewer_html, height=520)
+            st.components.v1.html(viewer_html, height=520)  # Aumentata altezza per contenere il visualizzatore quadrato
 
             if uploaded_file is not None:
                 try:
