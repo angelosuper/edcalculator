@@ -112,6 +112,39 @@ def main():
             format_func=lambda x: x.split(" ", 1)[1]
         )
 
+        # Sezione Download Documentazione
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 📥 Download Documentazione")
+
+        def get_file_content_as_string(file_path):
+            with open(file_path, 'r', encoding='utf-8') as file:
+                return file.read()
+
+        docs = {
+            "Struttura Applicazione": "documentation/app_structure.txt",
+            "Istruzioni Deployment": "documentation/deployment_instructions.txt",
+            "Documentazione Codice": "documentation/code_documentation.txt",
+            "README": "documentation/README.txt"
+        }
+
+        selected_doc = st.sidebar.selectbox(
+            "Seleziona documento da scaricare:",
+            list(docs.keys())
+        )
+
+        if selected_doc:
+            file_path = docs[selected_doc]
+            try:
+                file_content = get_file_content_as_string(file_path)
+                st.sidebar.download_button(
+                    label=f"📥 Download {selected_doc}",
+                    data=file_content,
+                    file_name=file_path.split('/')[-1],
+                    mime="text/plain"
+                )
+            except Exception as e:
+                st.sidebar.error(f"Errore nel caricamento del file: {str(e)}")
+
     # Contenuto principale
     if page == "🧮 Calcolo Costi":
         st.title("Calcolatore Costi Stampa 3D")
@@ -376,7 +409,6 @@ def main():
                     }
                     </style>
                     """, unsafe_allow_html=True)
-
 
                     # Mostra dimensioni con dimensioni ridotte
                     st.markdown("##### Dimensioni Oggetto")
