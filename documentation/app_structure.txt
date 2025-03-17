@@ -1,0 +1,81 @@
+# Struttura dell'Applicazione 3D Print Cost Calculator
+
+## File Principali e Loro Funzioni
+
+1. app.py
+   - Funzione: Entry point dell'applicazione Streamlit
+   - Plugin utilizzati: 
+     * streamlit: per l'interfaccia web
+     * plotly: per la visualizzazione 3D
+     * three.js (via CDN): per il rendering 3D
+   - Caratteristiche principali:
+     * Visualizzatore 3D con controlli personalizzati
+     * Calcolo costi in tempo reale
+     * Interfaccia multilingua (Italiano)
+
+2. materials_manager.py
+   - Funzione: Gestione dei materiali nel database
+   - Plugin utilizzati:
+     * streamlit: per l'interfaccia
+     * requests: per le chiamate API
+   - Caratteristiche:
+     * CRUD operazioni sui materiali
+     * Validazione dati
+     * Feedback visuale delle operazioni
+
+3. stl_processor.py
+   - Funzione: Elaborazione file STL e calcoli
+   - Plugin utilizzati:
+     * numpy-stl: per la lettura dei file STL
+     * numpy: per i calcoli matematici
+   - Caratteristiche:
+     * Calcolo volume
+     * Stima tempi di stampa
+     * Calcolo costi
+
+4. backend/api.py
+   - Funzione: API REST per la gestione dei dati
+   - Plugin utilizzati:
+     * fastapi: per l'API REST
+     * sqlalchemy: per l'ORM
+   - Caratteristiche:
+     * Endpoints per materiali e costi
+     * Gestione errori
+     * Logging
+
+5. backend/models.py
+   - Funzione: Modelli del database
+   - Plugin utilizzati:
+     * sqlalchemy: per l'ORM
+   - Caratteristiche:
+     * Schema materiali
+     * Schema stampanti
+     * Schema costi energetici
+
+6. backend/schemas.py
+   - Funzione: Schema di validazione dati
+   - Plugin utilizzati:
+     * pydantic: per la validazione
+   - Caratteristiche:
+     * Validazione input
+     * Conversione tipi
+     * Documentazione API
+
+## Struttura Database
+- PostgreSQL database con tabelle per:
+  * Materiali (proprietà fisiche e costi)
+  * Stampanti (configurazioni)
+  * Costi energetici
+
+## Deployment
+L'applicazione richiede:
+1. PostgreSQL database
+2. Server Python per backend (FastAPI)
+3. Server Python per frontend (Streamlit)
+4. Variabili d'ambiente:
+   - DATABASE_URL
+   - BACKEND_URL
+
+## Porte Utilizzate
+- Frontend (Streamlit): 5000
+- Backend (FastAPI): 8000

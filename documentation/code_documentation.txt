@@ -1,0 +1,98 @@
+# Documentazione Dettagliata del Codice
+
+## 1. Visualizzatore 3D (app.py)
+```javascript
+// Funzione: Rendering modello 3D con Three.js
+// Plugin: three.js, STLLoader
+// Caratteristiche:
+// - Vista quadrata con aspect ratio 1:1
+// - Sistema di illuminazione avanzato con 4 punti luce
+// - Controlli per zoom e rotazione
+// - Ombre e riflessi migliorati
+const viewer = new THREE.Scene();
+// ... (continua nel codice)
+```
+
+## 2. Gestione Materiali (materials_manager.py)
+```python
+# Funzione: CRUD operations per materiali
+# Plugin: streamlit, requests
+# Caratteristiche:
+# - Interfaccia utente reattiva
+# - Validazione input
+# - Feedback operazioni
+def materials_manager_page():
+    # ... (continua nel codice)
+```
+
+## 3. Processore STL (stl_processor.py)
+```python
+# Funzione: Analisi file STL
+# Plugin: numpy-stl, numpy
+# Caratteristiche:
+# - Calcolo volume preciso
+# - Stima tempi basata su parametri reali
+# - Calcolo costi materiale e macchina
+def process_stl(file_content):
+    # ... (continua nel codice)
+```
+
+## 4. API Backend (backend/api.py)
+```python
+# Funzione: REST API per dati
+# Plugin: fastapi, sqlalchemy
+# Caratteristiche:
+# - CRUD endpoints
+# - Gestione errori
+# - Logging operazioni
+@app.post("/materials/")
+def create_material():
+    # ... (continua nel codice)
+```
+
+## 5. Modelli Database (backend/models.py)
+```python
+# Funzione: Schema database
+# Plugin: sqlalchemy
+# Caratteristiche:
+# - Relazioni tra tabelle
+# - Vincoli e validazioni
+# - Indici per performance
+class Material(Base):
+    # ... (continua nel codice)
+```
+
+## 6. Validazione Dati (backend/schemas.py)
+```python
+# Funzione: Schema validazione
+# Plugin: pydantic
+# Caratteristiche:
+# - Validazione tipo dati
+# - Valori predefiniti
+# - Documentazione automatica
+class MaterialBase(BaseModel):
+    # ... (continua nel codice)
+```
+
+## Note di Implementazione
+
+### Calcolo Costi
+- Il costo totale include:
+  * Costo materiale (basato su peso e prezzo/kg)
+  * Costo macchina (basato su tempo e tariffa oraria)
+  * Possibilità di aggiungere costi energia
+
+### Sicurezza
+- Validazione input lato client e server
+- Sanitizzazione dati SQL
+- Gestione errori completa
+
+### Performance
+- Caching dei risultati pesanti
+- Ottimizzazione query database
+- Compressione dati 3D
+
+### Estensibilità
+- Architettura modulare
+- Interfacce ben definite
+- Documentazione completa

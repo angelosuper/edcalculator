@@ -1,0 +1,94 @@
+# Istruzioni per il Deployment
+
+## 1. Replit (Automatico)
+- Già configurato e pronto all'uso
+- URL: nome-progetto.nome-utente.repl.co
+- Database PostgreSQL incluso
+- Nessuna configurazione aggiuntiva necessaria
+
+## 2. Heroku
+Requisiti:
+- Account Heroku
+- Heroku CLI installata
+- Piano Eco ($5/mese)
+
+Comandi:
+```bash
+# Login
+heroku login
+
+# Crea app
+heroku create nome-app
+
+# Aggiungi database
+heroku addons:create heroku-postgresql:hobby-dev
+
+# Configura variabili
+heroku config:set BACKEND_URL=https://nome-app.herokuapp.com
+
+# Deploy
+git push heroku main
+```
+
+## 3. DigitalOcean
+Requisiti:
+- Account DigitalOcean
+- Droplet Ubuntu ($5/mese)
+- Domain name (opzionale)
+
+Passi:
+1. Crea Droplet
+2. Installa dipendenze:
+   ```bash
+   apt update
+   apt install python3-pip postgresql nginx
+   ```
+3. Configura PostgreSQL
+4. Configura Nginx
+5. Usa PM2 per i processi
+
+## 4. Railway
+Requisiti:
+- Account Railway
+- GitHub repository
+
+Passi:
+1. Connetti repository
+2. Aggiungi PostgreSQL
+3. Configura variabili d'ambiente
+4. Deploy automatico
+
+## 5. Render
+Requisiti:
+- Account Render
+- GitHub repository
+
+Passi:
+1. Nuovo Web Service
+2. Connetti repository
+3. Aggiungi database PostgreSQL
+4. Configura variabili d'ambiente
+
+## Configurazione Comune
+File requirements.txt necessario:
+```
+fastapi
+numpy
+numpy-stl
+pandas
+plotly
+psycopg2-binary
+pydantic
+python-multipart
+requests
+sqlalchemy
+streamlit
+trimesh
+uvicorn
+```
+
+File Procfile per Heroku:
+```
+web: uvicorn backend.api:app --host=0.0.0.0 --port=$PORT
+worker: streamlit run app.py --server.port=$PORT
+```
