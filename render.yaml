@@ -12,7 +12,7 @@ services:
       wait_for_db(max_retries=20, retry_delay=10)
       init_db()
       "
-      uvicorn backend.api:app --host 0.0.0.0 --port ${PORT}
+      uvicorn backend.api:app --host 0.0.0.0 --port ${PORT} --log-level debug
     envVars:
       - key: DATABASE_URL
         fromDatabase:

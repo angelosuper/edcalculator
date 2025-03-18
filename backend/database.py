@@ -1,6 +1,6 @@
 import os
 import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 import time
 
@@ -14,11 +14,15 @@ logger = logging.getLogger(__name__)
 # Get database URL from environment
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 if not SQLALCHEMY_DATABASE_URL:
+    logger.error("DATABASE_URL environment variable is not set")
     raise ValueError("DATABASE_URL environment variable is not set")
 
 # Fix per la compatibilità con SQLAlchemy
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    logger.info("Converting postgres:// to postgresql:// in database URL")
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+logger.info("Configuring database connection...")
 
 # Create engine with enhanced logging and longer timeout
 engine = create_engine(
@@ -47,12 +51,16 @@ def get_db():
 
 def wait_for_db(max_retries=10, retry_delay=5):
     """Wait for database to be available"""
+    logger.info(f"Waiting for database to be available (max retries: {max_retries}, delay: {retry_delay}s)...")
+
     for attempt in range(max_retries):
         try:
             # Try to connect to the database
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
-                logger.info("Successfully connected to database")
+                # Test query
+                result = conn.execute(text("SELECT version()"))
+                version = result.scalar()
+                logger.info(f"Successfully connected to database. PostgreSQL version: {version}")
                 return True
         except Exception as e:
             if attempt < max_retries - 1:
@@ -67,6 +75,7 @@ def init_db():
     """Initialize database with retry mechanism"""
     try:
         # First wait for database to be available
+        logger.info("Starting database initialization...")
         wait_for_db()
 
         from backend.base import Base
@@ -79,8 +88,9 @@ def init_db():
         # Add default materials if needed
         db = SessionLocal()
         try:
+            logger.info("Checking for existing materials...")
             if db.query(Material).count() == 0:
-                logger.info("Adding default materials...")
+                logger.info("No materials found. Adding default materials...")
                 default_materials = [
                     Material(
                         name="PLA",
@@ -121,6 +131,8 @@ def init_db():
                     db.add(material)
                 db.commit()
                 logger.info("Default materials added successfully")
+            else:
+                logger.info("Materials already exist in database")
         except Exception as e:
             logger.error(f"Error adding default materials: {str(e)}")
             db.rollback()
