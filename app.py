@@ -11,7 +11,11 @@ import tempfile
 import os
 import logging
 
-from stl_processor import process_stl, calculate_print_cost
+import os
+
+# Get backend URL from environment variable with fallback
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+
 from materials_manager import materials_manager_page, fetch_materials
 
 # Configura logging
@@ -23,13 +27,13 @@ logger = logging.getLogger(__name__)
 
 def get_materials_from_api():
     """Recupera i materiali dal backend"""
-    materials = fetch_materials()
+    materials = fetch_materials(BACKEND_URL)  # Pass the backend URL
     return {mat['name']: {
         'density': mat['density'],
         'cost_per_kg': mat['cost_per_kg'],
         'min_layer_height': mat['min_layer_height'],
         'max_layer_height': mat['max_layer_height'],
-        'hourly_cost': mat.get('hourly_cost', 30)  # Aggiungi il costo orario
+        'hourly_cost': mat.get('hourly_cost', 30)
     } for mat in materials}
 
 def convert_stl_to_glb(stl_content):

@@ -9,21 +9,21 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Ottieni l'URL del backend dall'ambiente o usa un default
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
-
-def fetch_materials():
+def fetch_materials(backend_url):
     """Recupera la lista dei materiali dal backend"""
     with st.spinner('🔄 Caricamento materiali in corso...'):
         try:
-            response = requests.get(f"{BACKEND_URL}/materials/")
+            logger.info(f"Fetching materials from: {backend_url}/materials/")
+            response = requests.get(f"{backend_url}/materials/")
             if response.status_code == 200:
-                time.sleep(0.5)
+                time.sleep(0.5)  # Small delay to show loading spinner
                 return response.json()
             else:
-                st.error(f"Errore nel recupero dei materiali: {response.status_code}")
+                st.error(f"Errore nel recupero dei materiali. Status code: {response.status_code}")
+                logger.error(f"Error response: {response.text}")
                 return []
         except Exception as e:
+            logger.error(f"Exception during materials fetch: {str(e)}")
             st.error(f"Errore di connessione al backend: {str(e)}")
             return []
 
@@ -49,26 +49,38 @@ def validate_material_data(data):
 
     return True
 
-def add_material(material_data):
+def add_material(material_data, backend_url):
     """Aggiunge un nuovo materiale"""
     if not validate_material_data(material_data):
         return False
 
     try:
+        logger.info(f"Adding material to: {backend_url}/materials/")
+        logger.info(f"Material data: {material_data}")
+
         response = requests.post(
-            f"{BACKEND_URL}/materials/",
+            f"{backend_url}/materials/",
             json=material_data,
             headers={"Content-Type": "application/json"}
         )
+
+        logger.info(f"Response status: {response.status_code}")
+        logger.info(f"Response content: {response.text}")
 
         if response.status_code == 200:
             st.success("✅ Materiale aggiunto con successo!")
             return True
         else:
-            error_detail = response.json().get('detail', 'Errore sconosciuto')
+            error_detail = "Errore sconosciuto"
+            try:
+                error_detail = response.json().get('detail', 'Errore sconosciuto')
+            except:
+                error_detail = response.text if response.text else "Nessun dettaglio disponibile"
+
             st.error(f"Errore nell'aggiunta del materiale: {error_detail}")
             return False
     except Exception as e:
+        logger.error(f"Exception during material addition: {str(e)}")
         st.error(f"Errore durante l'aggiunta del materiale: {str(e)}")
         return False
 
@@ -165,12 +177,12 @@ def materials_manager_page():
                 "fan_speed": 100,
                 "flow_rate": 100
             }
-            if add_material(material_data):
+            if add_material(material_data, BACKEND_URL):
                 st.rerun()
 
     # Lista dei materiali esistenti
     st.markdown("### 📋 Materiali Esistenti")
-    materials = fetch_materials()
+    materials = fetch_materials(BACKEND_URL)
 
     if not materials:
         st.info("Nessun materiale presente. Aggiungi il tuo primo materiale!")
@@ -268,3 +280,6 @@ def materials_manager_page():
                         st.rerun()
 
             st.markdown("---")
+
+# Ottieni l'URL del backend dall'ambiente o usa un default
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
