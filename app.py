@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Get backend URL from environment variable with fallback
 # In production on Render, this will point to the backend service
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+BACKEND_URL = os.getenv('BACKEND_URL', 'https://3d-print-calculator-backend.onrender.com')
 
 logger.info(f"Using backend URL: {BACKEND_URL}")
 
