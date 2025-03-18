@@ -6,7 +6,13 @@ services:
     buildCommand: |
       python generate_requirements.py
       pip install -r requirements.txt
-    startCommand: uvicorn backend.api:app --host 0.0.0.0 --port ${PORT}
+    startCommand: |
+      python -c "
+      from backend.database import wait_for_db, init_db
+      wait_for_db(max_retries=20, retry_delay=10)
+      init_db()
+      "
+      uvicorn backend.api:app --host 0.0.0.0 --port ${PORT}
     envVars:
       - key: DATABASE_URL
         fromDatabase:
