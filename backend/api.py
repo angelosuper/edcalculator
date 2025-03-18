@@ -3,6 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
+import time
 
 from . import models, schemas, database
 
@@ -21,21 +22,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize database tables at startup
+# Initialize database tables at startup with retry mechanism
 @app.on_event("startup")
 async def startup_event():
-    try:
-        logger.info("Initializing database...")
-        database.init_db()
-        logger.info("Database initialized successfully")
+    max_retries = 5
+    retry_delay = 2  # seconds
 
-        # Log available routes
-        routes = [{"path": route.path, "name": route.name} for route in app.routes]
-        logger.info(f"Available routes: {routes}")
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Initializing database (attempt {attempt + 1}/{max_retries})...")
+            database.init_db()
+            logger.info("Database initialized successfully")
 
-    except Exception as e:
-        logger.error(f"Error during startup: {str(e)}")
-        raise
+            # Log available routes
+            routes = [{"path": route.path, "name": route.name} for route in app.routes]
+            logger.info(f"Available routes: {routes}")
+            return
+
+        except Exception as e:
+            logger.error(f"Error during startup attempt {attempt + 1}: {str(e)}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error("Max retries reached, failing startup")
+                raise
 
 # Root endpoint with health check
 @app.get("/")
