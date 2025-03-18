@@ -37,10 +37,10 @@ def get_db():
 
 def init_db():
     """Initialize database"""
-    from .base import Base
-    from . import models
-
     try:
+        from backend.base import Base
+        from backend.models import Material
+
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
@@ -48,10 +48,10 @@ def init_db():
         # Add default materials if needed
         db = SessionLocal()
         try:
-            if db.query(models.Material).count() == 0:
+            if db.query(Material).count() == 0:
                 logger.info("Adding default materials...")
                 default_materials = [
-                    models.Material(
+                    Material(
                         name="PLA",
                         density=1.24,
                         cost_per_kg=20.0,
@@ -65,9 +65,10 @@ def init_db():
                         print_speed=60.0,
                         first_layer_speed=30.0,
                         fan_speed=100,
-                        flow_rate=100
+                        flow_rate=100,
+                        hourly_cost=30.0
                     ),
-                    models.Material(
+                    Material(
                         name="PETG",
                         density=1.27,
                         cost_per_kg=25.0,
@@ -81,7 +82,8 @@ def init_db():
                         print_speed=50.0,
                         first_layer_speed=25.0,
                         fan_speed=50,
-                        flow_rate=100
+                        flow_rate=100,
+                        hourly_cost=30.0
                     )
                 ]
                 for material in default_materials:
@@ -94,6 +96,7 @@ def init_db():
             raise
         finally:
             db.close()
+
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
         raise
