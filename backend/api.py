@@ -37,10 +37,15 @@ async def startup_event():
         logger.error(f"Error during startup: {str(e)}")
         raise
 
-# Test endpoint
+# Root endpoint with health check
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "API is running"}
+    """Health check endpoint"""
+    return {
+        "status": "ok",
+        "message": "3D Print Calculator API is running",
+        "version": "1.0.0"
+    }
 
 # Materials endpoints
 @app.get("/materials/", response_model=List[schemas.Material])
@@ -76,11 +81,7 @@ def update_material(material_id: int, material: schemas.MaterialUpdate, db: Sess
         if not db_material:
             raise HTTPException(status_code=404, detail="Material not found")
 
-        # Log dei dati ricevuti per debug
-        logger.info(f"Updating material {material_id} with data: {material.dict(exclude_unset=True)}")
-
         for field, value in material.dict(exclude_unset=True).items():
-            logger.info(f"Setting {field} = {value}")
             setattr(db_material, field, value)
 
         try:

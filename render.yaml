@@ -6,7 +6,7 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: |
       sleep 5 && python -c "from backend.database import init_db; init_db()" &&
-      uvicorn backend.api:app --host 0.0.0.0 --port $PORT
+      uvicorn backend.api:app --host 0.0.0.0 --port ${PORT}
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -18,7 +18,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run app.py --server.port $PORT
+    startCommand: streamlit run app.py --server.port ${PORT}
     envVars:
       - key: BACKEND_URL
         value: https://3d-print-calculator-backend.onrender.com
