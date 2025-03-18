@@ -24,13 +24,31 @@ app.add_middleware(
 # Initialize database tables at startup
 @app.on_event("startup")
 async def startup_event():
-    database.init_db()
+    try:
+        logger.info("Initializing database...")
+        database.init_db()
+        logger.info("Database initialized successfully")
+
+        # Log available routes
+        routes = [{"path": route.path, "name": route.name} for route in app.routes]
+        logger.info(f"Available routes: {routes}")
+
+    except Exception as e:
+        logger.error(f"Error during startup: {str(e)}")
+        raise
+
+# Test endpoint
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "API is running"}
 
 # Materials endpoints
 @app.get("/materials/", response_model=List[schemas.Material])
 def read_materials(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)):
     try:
+        logger.info("Fetching materials from database")
         materials = db.query(models.Material).offset(skip).limit(limit).all()
+        logger.info(f"Found {len(materials)} materials")
         return materials
     except Exception as e:
         logger.error(f"Error fetching materials: {str(e)}")
@@ -39,10 +57,12 @@ def read_materials(skip: int = 0, limit: int = 100, db: Session = Depends(databa
 @app.post("/materials/", response_model=schemas.Material)
 def create_material(material: schemas.MaterialCreate, db: Session = Depends(database.get_db)):
     try:
+        logger.info(f"Creating new material: {material.dict()}")
         db_material = models.Material(**material.dict())
         db.add(db_material)
         db.commit()
         db.refresh(db_material)
+        logger.info(f"Material created successfully: {db_material.id}")
         return db_material
     except Exception as e:
         db.rollback()
