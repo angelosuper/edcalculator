@@ -14,7 +14,8 @@ import logging
 import os
 
 # Get backend URL from environment variable with fallback
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+# In production on Render, this will point to the backend service
+BACKEND_URL = os.getenv('BACKEND_URL', 'https://3d-print-calculator-backend.onrender.com')
 
 from materials_manager import materials_manager_page, fetch_materials
 
