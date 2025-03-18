@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: |
+      export PYTHONPATH=$PYTHONPATH:${PWD}
       python -c "
       from backend.database import init_db
       init_db()

@@ -15,16 +15,22 @@ def fetch_materials(backend_url):
         try:
             logger.info(f"Fetching materials from: {backend_url}/materials/")
             response = requests.get(f"{backend_url}/materials/")
+            response.raise_for_status()  # This will raise an exception for error status codes
+
             if response.status_code == 200:
                 time.sleep(0.5)  # Small delay to show loading spinner
                 return response.json()
             else:
-                st.error(f"Errore nel recupero dei materiali. Status code: {response.status_code}")
                 logger.error(f"Error response: {response.text}")
+                st.error(f"Errore nel recupero dei materiali. Status code: {response.status_code}")
                 return []
-        except Exception as e:
-            logger.error(f"Exception during materials fetch: {str(e)}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request exception during materials fetch: {str(e)}")
             st.error(f"Errore di connessione al backend: {str(e)}")
+            return []
+        except Exception as e:
+            logger.error(f"Unexpected exception during materials fetch: {str(e)}")
+            st.error(f"Errore imprevisto: {str(e)}")
             return []
 
 def validate_material_data(data):
