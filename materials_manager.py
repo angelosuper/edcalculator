@@ -13,8 +13,9 @@ def fetch_materials(backend_url):
     """Recupera la lista dei materiali dal backend"""
     with st.spinner('🔄 Caricamento materiali in corso...'):
         try:
-            logger.info(f"Fetching materials from: {backend_url}/materials/")
-            response = requests.get(f"{backend_url}/materials/")
+            endpoint = f"{backend_url}/materials/"
+            logger.info(f"Fetching materials from: {endpoint}")
+            response = requests.get(endpoint)
             response.raise_for_status()  # This will raise an exception for error status codes
 
             if response.status_code == 200:

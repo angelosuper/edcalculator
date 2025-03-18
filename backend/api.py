@@ -15,7 +15,7 @@ app = FastAPI(title="3D Print Cost Calculator API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific domain
+    allow_origins=["*"],  # In development, allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
