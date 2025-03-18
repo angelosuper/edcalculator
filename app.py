@@ -11,20 +11,20 @@ import tempfile
 import os
 import logging
 
-import os
-
-# Get backend URL from environment variable with fallback
-# In production on Render, this will point to the backend service
-BACKEND_URL = os.getenv('BACKEND_URL', 'https://3d-print-calculator-backend.onrender.com')
-
-from materials_manager import materials_manager_page, fetch_materials
-
-# Configura logging
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Get backend URL from environment variable with fallback
+# In production on Render, this will point to the backend service
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+
+logger.info(f"Using backend URL: {BACKEND_URL}")
+
+from materials_manager import materials_manager_page, fetch_materials
 
 def get_materials_from_api():
     """Recupera i materiali dal backend"""

@@ -16,3 +16,8 @@ streamlit-extras
 trimesh
 twilio
 tomli
+fastapi
+psycopg2-binary
+sqlalchemy
+streamlit
+uvicorn

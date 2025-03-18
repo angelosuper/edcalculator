@@ -44,7 +44,7 @@ def init_db():
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
-
+        
         # Add default materials if needed
         db = SessionLocal()
         try:
