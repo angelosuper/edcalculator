@@ -4,19 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: |
-      export PYTHONPATH=$PYTHONPATH:${PWD}
-      echo "Current directory: $(pwd)"
-      echo "Python path: $PYTHONPATH"
-      echo "Initializing database..."
-      python -c "
-      import sys
-      print('Python version:', sys.version)
-      print('Python path:', sys.path)
-      from backend.database import init_db
-      init_db()
-      "
-      uvicorn backend.api:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn backend.api:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
