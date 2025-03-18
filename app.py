@@ -25,6 +25,7 @@ BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
 logger.info(f"Using backend URL: {BACKEND_URL}")
 
 from materials_manager import materials_manager_page, fetch_materials
+from stl_processor import process_stl, calculate_print_cost  # Add these imports
 
 def get_materials_from_api():
     """Recupera i materiali dal backend"""
