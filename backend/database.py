@@ -2,6 +2,7 @@ import os
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import time
 
 # Configura logging
 logging.basicConfig(
@@ -19,12 +20,21 @@ if not SQLALCHEMY_DATABASE_URL:
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Create engine with enhanced logging
+# Create engine with enhanced logging and longer timeout
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     echo=True,  # Enable SQL logging
-    pool_pre_ping=True  # Enable connection health checks
+    pool_pre_ping=True,  # Enable connection health checks
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800,
+    connect_args={
+        'connect_timeout': 30,
+        'options': '-c statement_timeout=30000'
+    }
 )
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
@@ -35,16 +45,37 @@ def get_db():
     finally:
         db.close()
 
+def wait_for_db(max_retries=10, retry_delay=5):
+    """Wait for database to be available"""
+    for attempt in range(max_retries):
+        try:
+            # Try to connect to the database
+            with engine.connect() as conn:
+                conn.execute("SELECT 1")
+                logger.info("Successfully connected to database")
+                return True
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"Database connection attempt {attempt + 1} failed: {str(e)}")
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error("Max retries reached, could not connect to database")
+                raise
+
 def init_db():
-    """Initialize database"""
+    """Initialize database with retry mechanism"""
     try:
+        # First wait for database to be available
+        wait_for_db()
+
         from backend.base import Base
         from backend.models import Material
 
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
-        
+
         # Add default materials if needed
         db = SessionLocal()
         try:
